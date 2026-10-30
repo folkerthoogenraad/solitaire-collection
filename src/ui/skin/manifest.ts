@@ -28,7 +28,8 @@ export interface SkinManifest {
     narrow?: 'single' | 'layout';
     layouts?: Record<string, PipPoint[]>;
   };
-  table?: { felt?: 'cover' | 'tile' };
+  /** `tileSize`: width of one felt tile, in card widths. `slotScale`: size of the empty-pile images relative to the pile. */
+  table?: { felt?: 'cover' | 'tile'; tileSize?: number; slotScale?: number };
   ui?: { button?: { slice?: number }; panel?: { slice?: number } };
 }
 
@@ -44,7 +45,7 @@ export interface SkinSettings {
   card: { scale: number };
   center: { box: Box; narrowBox: Box };
   pips: { size: number; flip: 'auto' | 'none'; narrow: 'single' | 'layout'; layouts: Record<string, PipPoint[]> };
-  table: { felt: 'cover' | 'tile' };
+  table: { felt: 'cover' | 'tile'; tileSize?: number; slotScale: number };
   ui: { button: { slice: number }; panel: { slice: number } };
 }
 
@@ -56,7 +57,7 @@ export const DEFAULT_SETTINGS: SkinSettings = {
     narrowBox: { x: 0.08, y: 0.28, w: 0.84, h: 0.64 },
   },
   pips: { size: 0.2, flip: 'auto', narrow: 'single', layouts: {} },
-  table: { felt: 'cover' },
+  table: { felt: 'cover', slotScale: 1 },
   ui: { button: { slice: 12 }, panel: { slice: 24 } },
 };
 
@@ -147,7 +148,7 @@ const manifest = shape<SkinManifest>({
     narrow: oneOf('single', 'layout'),
     layouts: record(list(pipPoint)),
   }),
-  table: shape({ felt: oneOf('cover', 'tile') }),
+  table: shape({ felt: oneOf('cover', 'tile'), tileSize: num, slotScale: num }),
   ui: shape({ button: shape({ slice: num }), panel: shape({ slice: num }) }),
 });
 

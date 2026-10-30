@@ -1,4 +1,5 @@
 import { buildCards, type DeckDefinition } from '../../core/deck';
+import { MAX_CARD_W } from '../layout';
 import type { CardFaceRenderer } from '../faces';
 import { catalog } from './catalog';
 import { DEFAULT_SETTINGS, type Box, type SkinSettings } from './manifest';
@@ -15,7 +16,7 @@ async function loadImage(url: string): Promise<LoadedImage> {
   const img = new Image();
   img.src = new URL(url, document.baseURI).href;
   await img.decode();
-  return { url: img.src, ar: img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1 };
+  return { url: img.src, w: img.naturalWidth, ar: img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1 };
 }
 
 function setBox(style: CSSStyleDeclaration, prefix: string, b: Box): void {
@@ -25,18 +26,22 @@ function setBox(style: CSSStyleDeclaration, prefix: string, b: Box): void {
   style.setProperty(`--${prefix}-h`, `${b.h * 100}%`);
 }
 
-function apply(board: HTMLElement, id: string | null, settings: SkinSettings, chrome: Record<string, string | undefined>): void {
+function apply(board: HTMLElement, id: string | null, settings: SkinSettings, chrome: Record<string, string | undefined>, felt?: LoadedImage): void {
   const root = document.documentElement.style;
   for (const [name, value] of Object.entries(settings.colors)) root.setProperty(`--${name}`, value);
   setBox(root, 'center', settings.center.box);
   setBox(root, 'center-n', settings.center.narrowBox);
   root.setProperty('--pip-size', String(settings.pips.size));
   root.setProperty('--card-scale', String(settings.card.scale));
+  root.setProperty('--slot-scale', String(settings.table.slotScale));
   root.setProperty('--skin-button-slice', String(settings.ui.button.slice));
   root.setProperty('--skin-panel-slice', String(settings.ui.panel.slice));
 
   if (id) board.dataset.skin = id;
   if (chrome.felt) board.dataset.felt = settings.table.felt;
+  // A tile scales with the cards, so it covers the same share of the table on a phone as on a desktop.
+  // Unsized, it's shown at its own pixel size when the cards are at their largest.
+  if (felt) root.setProperty('--felt-tile', String(settings.table.tileSize ?? felt.w / MAX_CARD_W.wide));
   for (const [key, url] of Object.entries(chrome)) {
     if (!url) continue;
     const name = key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
@@ -53,10 +58,14 @@ export async function loadSkin(deck: DeckDefinition, board: HTMLElement, request
   const cat = catalog();
   if (import.meta.env.DEV) {
     for (const p of cat.problems) console.warn(`[skins] ${p}`);
+    // Before apply(), so only theme.css defines colours: anything it lacks is a name no style reads.
+    const theme = getComputedStyle(document.documentElement);
     for (const id of cat.registry.skins) {
       const skin = cat.skins.get(id);
       const unknown = skin ? unknownFiles(skin, deck) : [];
       if (unknown.length) console.warn(`[skins] ${id}: files no card uses (typo?):\n  ${unknown.join('\n  ')}`);
+      const colors = Object.keys(skin?.manifest.colors ?? {}).filter((name) => !theme.getPropertyValue(`--${name}`));
+      if (colors.length) console.warn(`[skins] ${id}: colours that don't exist (see skins/README.md):\n  ${colors.join('\n  ')}`);
     }
   }
 
@@ -100,6 +109,6 @@ export async function loadSkin(deck: DeckDefinition, board: HTMLElement, request
   );
 
   const chrome = Object.fromEntries(Object.entries(chromePaths).map(([k, p]) => [k, p && images.get(p)?.url]));
-  apply(board, id, settings, chrome);
+  apply(board, id, settings, chrome, chromePaths.felt ? images.get(chromePaths.felt) : undefined);
   return { id, faces: skinFaces(specs, images) };
 }

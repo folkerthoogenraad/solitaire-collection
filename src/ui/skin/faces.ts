@@ -3,6 +3,8 @@ import type { Asset, FaceSpec, Pip } from './resolve';
 
 export interface LoadedImage {
   url: string;
+  /** Natural width in px. */
+  w: number;
   /** Width / height. */
   ar: number;
 }

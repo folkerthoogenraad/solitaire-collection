@@ -5,7 +5,7 @@ export const CARD_RATIO = 1.4;
 /** Smallest fan (× card width) that still shows a one-line index. */
 const MIN_FAN = 0.34;
 /** Largest card width (px) per mode; this is what caps the board width on big screens. */
-const MAX_CARD_W = { wide: 150, narrow: 110 };
+export const MAX_CARD_W = { wide: 150, narrow: 110 };
 
 export interface Rect {
   x: number;

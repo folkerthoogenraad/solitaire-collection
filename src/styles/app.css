@@ -283,10 +283,24 @@ body {
 
 /* Skin table and UI images (attributes are set only when the skin has the image) */
 .board[data-felt] { background: var(--skin-felt) center / cover no-repeat, var(--felt-edge); }
-.board[data-felt="tile"] { background: var(--skin-felt) repeat, var(--felt-edge); }
-.board[data-skin-slot] .slot { border: 0; background: var(--skin-slot) center / 100% 100% no-repeat; }
-.board[data-skin-slot-stock] .slot[data-label] { border: 0; background: var(--skin-slot-stock) center / 100% 100% no-repeat; }
-.board[data-skin-slot-stock] .slot[data-label]::after { content: none; }
+.board[data-felt="tile"] { background: var(--skin-felt) 0 0 / calc(var(--cw) * var(--felt-tile)) auto repeat, var(--felt-edge); }
+/*
+ * Empty piles: ink (tinted with the slot border colour) in ::before, paint behind the label in ::after.
+ * The stock's own images, when it has either, replace both layers and the label.
+ * Both layers reach past the pile by --slot-scale, like a shaped card's body.
+ */
+.slot { --slot-bleed: calc((var(--slot-scale, 1) - 1) / 2); }
+.slot::before, .slot::after { inset: calc(var(--cw) * 1.4 * var(--slot-bleed) * -1) calc(var(--cw) * var(--slot-bleed) * -1); }
+.slot::before { position: absolute; background-color: var(--slot-border); mask: var(--slot-ink) center / 100% 100% no-repeat; }
+.slot::after { background: var(--slot-paint) center / 100% 100% no-repeat; }
+.board:is([data-skin-slot], [data-skin-slot-ink]) .slot { border: 0; }
+.board[data-skin-slot-ink] .slot { --slot-ink: var(--skin-slot-ink); }
+.board[data-skin-slot-ink] .slot::before { content: ""; }
+.board[data-skin-slot] .slot { --slot-paint: var(--skin-slot); }
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label] { border: 0; --slot-ink: var(--skin-slot-stock-ink); --slot-paint: var(--skin-slot-stock); }
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label]::before { content: none; }
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label]::after { content: ""; }
+.board[data-skin-slot-stock-ink] .slot[data-label]::before { content: ""; }
 
 /*
  * Shaped cards (card/shape.png): the shape replaces the rounded corners for the body, background, hint overlay and

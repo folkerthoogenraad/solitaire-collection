@@ -33,7 +33,7 @@ Every card image can be saved in two ways, and you can use both at once:
 | `name.ink.png` | Only the shape is used. It's filled with the suit colour from `skin.json`, so draw it in any single colour on a transparent background. |
 | `name.png` | Shown exactly as drawn, in full colour. |
 
-If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail. Table and button images are always shown as drawn.
+If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail. Ink isn't always the suit colour: the card outline uses `card-border` and empty piles use `slot-border` (see [Colours](#colours)). The table felt, buttons and panel can only be painted.
 
 ## All files
 
@@ -115,9 +115,9 @@ A hand-drawn edge eats into the card: if the wobbles have to stay inside 360 × 
 
 | File | Draw at | Notes |
 |---|---|---|
-| `table/felt.png` | ≥ 1920 × 1080, or a tile | Set `"felt": "tile"` in `skin.json` for a repeating tile |
-| `table/slot.png` | 360 × 504 px | Empty pile |
-| `table/slot-stock.png` | 360 × 504 px | Empty stock pile. Replaces the "Stock" label, so draw your own |
+| `table/felt.png` | ≥ 1920 × 1080, or a tile | Set `"felt": "tile"` in `skin.json` for a repeating tile. A tile grows and shrinks with the cards, so it looks the same on a phone as on a desktop (see `tileSize`) |
+| `table/slot.ink.png` / `table/slot.png` | 360 × 504 px (× `slotScale`) | Empty pile (foundations and columns). Ink is tinted with `slot-border` |
+| `table/slot-stock.ink.png` / `table/slot-stock.png` | 360 × 504 px (× `slotScale`) | Empty stock pile. Replaces both slot layers and the "Stock" label, so draw your own |
 | `ui/button.png` | any, at 3× | Stretched around the text: corners stay, edges stretch (set `slice`) |
 | `ui/panel.png` | any, at 3× | The "You won" panel, stretched the same way |
 
@@ -130,7 +130,7 @@ Everything is optional. Anything you leave out comes from the skin you extend. H
   "name": "My skin",
   "extends": "classic",
 
-  // Any colour from src/styles/theme.css, without the leading --
+  // See "Colours" below for every name you can use
   "colors": {
     "suit-hearts": "#a33",
     "card-bg": "#f2ead8",
@@ -157,13 +157,49 @@ Everything is optional. Anything you leave out comes from the skin you extend. H
     }
   },
 
-  "table": { "felt": "cover" },   // "cover" or "tile"
+  "table": {
+    "felt": "cover",     // "cover" (one image over the whole table) or "tile" (repeated)
+    "tileSize": 1.5      // width of one tile, in card widths. Leave it out and a tile is shown at
+                         // its own pixel size when the cards are at their largest (150 px wide).
+                         // Set it, and you can draw the tile at any resolution: 3× is sharp on phones
+    "slotScale": 1.1     // size of the empty-pile images relative to the pile, like card.scale: lets a
+                         // hand-drawn edge reach past the pile. Draw them at 360 × 504 × slotScale
+  },
   "ui": {
     "button": { "slice": 12 },    // source px from each edge that must not stretch
     "panel": { "slice": 24 }
   }
 }
 ```
+
+### Colours
+
+Set colours in `"colors"`, by name, with any CSS colour as the value: `"#a33"`, `"#ffffe5"`, `"rgb(0 0 0 / 40%)"`, `"darkred"`, or `"transparent"` to hide something. You only list the ones you change. A name that isn't in this list does nothing (the browser console warns about it while you run `npm run dev`).
+
+| Name | What it colours |
+|---|---|
+| **Cards** | |
+| `card-bg` | The card itself, under the background image and centre art |
+| `card-border` | The thin line around a card. With `card/shape.png`, the `card/outline.ink.png` instead |
+| `card-shadow` | The small shadow under a card lying on the table (not with a shape) |
+| `card-lifted-shadow` | The shadow under a card you're dragging; also under the autocascade button and the "You won" panel |
+| `card-hint-bg` | A card's colour while it's the place the card you're holding belongs |
+| `card-hint-ring` | The inner ring on that same card (not with a shape) |
+| **Suits** | |
+| `suit-spades` `suit-hearts` `suit-diamonds` `suit-clubs` | Everything drawn as ink on a card of that suit: corner index, pips, `.ink` centre art and backgrounds |
+| **Table** | |
+| `felt-center` `felt-edge` | The table: a glow from the centre colour at the top to the edge colour. `felt-edge` also shows behind `table/felt.png` |
+| `slot-border` | The dashed outline of an empty pile (or `table/slot.ink.png` and `table/slot-stock.ink.png`), and the line between the piles and the columns |
+| `slot-label` | The "Stock" text on the empty stock |
+| `drop-highlight` | The glow around the pile your card will land on |
+| **Controls** | |
+| `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`) |
+| `text` `text-muted` | The win count next to the buttons: number and label |
+| **"You won"** | |
+| `win-backdrop` | The dimming over the table |
+| `win-panel-bg` `win-panel-text` | The panel (when there's no `ui/panel.png`) and its text |
+
+The defaults are in `src/styles/theme.css`.
 
 ### Pip layouts
 

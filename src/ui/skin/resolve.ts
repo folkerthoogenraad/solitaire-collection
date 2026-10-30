@@ -43,7 +43,10 @@ export interface ChromeSpec {
   shape?: string;
   felt?: string;
   slot?: string;
+  /** Tinted with `--slot-border`. */
+  slotInk?: string;
   slotStock?: string;
+  slotStockInk?: string;
   button?: string;
   panel?: string;
 }
@@ -161,11 +164,15 @@ export function resolveFace(chain: readonly SkinSource[], settings: SkinSettings
 export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
   const paint = (key: string) => lookup(chain, key).paint;
   const shape = lookup(chain, 'card/shape');
+  const slot = lookup(chain, 'table/slot');
+  const slotStock = lookup(chain, 'table/slot-stock');
   return {
     shape: shape.ink ?? shape.paint,
     felt: paint('table/felt'),
-    slot: paint('table/slot'),
-    slotStock: paint('table/slot-stock'),
+    slot: slot.paint,
+    slotInk: slot.ink,
+    slotStock: slotStock.paint,
+    slotStockInk: slotStock.ink,
     button: paint('ui/button'),
     panel: paint('ui/panel'),
   };
@@ -175,19 +182,19 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
 export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
   const ranks = deck.ranks.map((r) => r.label);
   const suits = deck.suits.map((s) => s.name);
-  const card = new Set<string>(['card/background', 'card/outline', 'card/shape']);
+  const card = new Set<string>(['card/background', 'card/outline', 'card/shape', 'table/slot', 'table/slot-stock']);
   for (const s of suits) card.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
   for (const r of ranks) {
     card.add(`index/${r}`).add(`center/${r}`);
     for (const s of suits) card.add(`index/${r}-${s}`).add(`center/${r}-${s}`);
   }
-  const paintOnly = new Set(['table/felt', 'table/slot', 'table/slot-stock', 'ui/button', 'ui/panel']);
+  const paintOnly = new Set(['table/felt', 'ui/button', 'ui/panel']);
 
   const out: string[] = [];
   for (const [key, asset] of skin.assets) {
     if (card.has(key)) continue;
     if (paintOnly.has(key) && !asset.ink) continue;
-    out.push(paintOnly.has(key) ? `${key}.ink (table and UI images can't be tinted)` : key);
+    out.push(paintOnly.has(key) ? `${key}.ink (the felt and UI images can't be tinted)` : key);
   }
   return out;
 }

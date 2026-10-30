@@ -100,7 +100,9 @@ describe('centre', () => {
 describe('index, background and chrome', () => {
   const all = skins({
     classic: { files: ['index/A.ink.png', 'index/spades.ink.png', 'card/background.png', 'table/felt.png'] },
-    mine: { files: ['index/A-hearts.png', 'card/background-hearts.png', 'card/outline.ink.png', 'card/shape.ink.png', 'ui/button.png'] },
+    mine: {
+      files: ['index/A-hearts.png', 'card/background-hearts.png', 'card/outline.ink.png', 'card/shape.ink.png', 'table/slot.ink.png', 'table/slot.png', 'ui/button.png'],
+    },
   });
 
   it('resolves the most specific file down the chain', () => {
@@ -118,22 +120,28 @@ describe('index, background and chrome', () => {
       shape: '/skins/mine/card/shape.ink.png',
       felt: '/skins/classic/table/felt.png',
       button: '/skins/mine/ui/button.png',
-      slot: undefined,
+      slot: '/skins/mine/table/slot.png',
+      slotInk: '/skins/mine/table/slot.ink.png',
       slotStock: undefined,
+      slotStockInk: undefined,
       panel: undefined,
     });
   });
 
-  it('inherits the card scale', () => {
-    const scaled = skins({ classic: {}, a: { manifest: { card: { scale: 1.1 } } }, b: { manifest: { extends: 'a' } } });
-    expect(settingsFor(chainFor(scaled.skins, 'classic')).card.scale).toBe(1);
-    expect(settingsFor(chainFor(scaled.skins, 'b')).card.scale).toBe(1.1);
+  it('inherits the card and slot scale', () => {
+    const scaled = skins({
+      classic: {},
+      a: { manifest: { card: { scale: 1.1 }, table: { slotScale: 1.2 } } },
+      b: { manifest: { extends: 'a', table: { felt: 'tile' } } },
+    });
+    expect(settingsFor(chainFor(scaled.skins, 'classic'))).toMatchObject({ card: { scale: 1 }, table: { slotScale: 1 } });
+    expect(settingsFor(chainFor(scaled.skins, 'b'))).toMatchObject({ card: { scale: 1.1 }, table: { felt: 'tile', slotScale: 1.2 } });
   });
 });
 
 describe('unknown files', () => {
   it('lists typos and tinted table images', () => {
-    const all = skins({ classic: { files: ['center/7-club.png', 'center/7-clubs.png', 'table/felt.ink.png', 'ui/panel.png', 'card/shape.png', 'card/outline-hearts.png'] } });
+    const all = skins({ classic: { files: ['center/7-club.png', 'center/7-clubs.png', 'table/felt.ink.png', 'ui/panel.png', 'card/shape.png', 'card/outline-hearts.png', 'table/slot.ink.png'] } });
     expect(unknownFiles(all.skins.get('classic')!, deck)).toEqual(['center/7-club', expect.stringMatching(/^table\/felt\.ink/)]);
   });
 });
