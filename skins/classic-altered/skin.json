@@ -1,20 +1,26 @@
 {
   "name": "Classic",
   "colors": {
-    "card-bg": "#ffe",
+    "card-bg": "#ffffe5",
+    "card-border": "#c3c3a0",
     "suit-spades": "#000",
     "suit-hearts": "#DD0000",
     "suit-diamonds": "#DD0000",
     "suit-clubs": "#000",
-    "felt-center": "#222",
-    "felt-edge": "#222"
+    "felt-center": "#3e485d",
+    "felt-edge": "#3e485d"
   },
   "center": {
     "box": { "x": 0.22, "y": 0.12, "w": 0.56, "h": 0.76 },
     "narrowBox": { "x": 0.08, "y": 0.28, "w": 0.84, "h": 0.64 }
   },
   "card": {
-    "scale": 1.1
+    "scale": 1.02
+  },
+  "table": {
+    "felt": "tile",
+    "tileSize": 1.5,
+    "slotScale": 1.02
   },
   "pips": {
     "size": 0.28,
