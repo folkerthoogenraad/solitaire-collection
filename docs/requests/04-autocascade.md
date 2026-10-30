@@ -1,1 +1,1 @@
-Whenever a card, like the A is moved to a foundation, and it is possible to move _more_ cards automatically, I want a small button to appear for a few seconds that says "autocascade".
+Whenever a card, like the A is moved to a foundation, and it is possible to move _more_ cards automatically, I want a small button to appear for a few seconds that says "autocascade". Clicking that, will autocascade the rest of the cards in the color you just clicked. I don't want auto cascade to be fully automatic, becuase in this variant that can _actually_ hurt solvability.
