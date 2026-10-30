@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C · Paper rows · desktop</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board {
+    --cw: 64px; --ch: 88px; --r: 6px;
+    --rank-fs: 18px; --suit-fs: 14px; --pip-fs: 34px; --idx-pad: 4px;
+    --lift-x: 0px; --lift-y: -10px;
+    background: radial-gradient(ellipse at 30% 20%, #f6efdf, #e6d9bc 85%);
+    color: #2b2118;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .bar { height: 60px; display: flex; align-items: center; gap: 24px; padding: 0 36px; border-bottom: 1px solid #cdbf9f; }
+  .bar h1 { flex: 1; margin: 0; font-size: 24px; font-style: italic; font-weight: 400; }
+  .wins { font-size: 16px; }
+  .btn { background: transparent; color: #2b2118; border: 1.5px solid #2b2118; border-radius: 4px; padding: 7px 16px; font: inherit; font-size: 15px; }
+
+  .main { display: flex; gap: 40px; padding: 28px 36px; }
+  .side { display: flex; flex-direction: column; gap: 10px; padding-right: 32px; border-right: 1px solid #cdbf9f; }
+  .side .sep { height: 8px; }
+  .rows { display: flex; flex-direction: column; gap: 8px; width: 440px; }
+  .rows .pile { margin-left: 22px; }
+  .row-label { position: absolute; left: -22px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #9a8a6a; }
+
+  .card { background: #fbf7ee; border: 1px solid #cdbf9f; box-shadow: 1px 1px 0 rgba(80, 60, 20, 0.15); }
+  .card.red { color: #a4161a; }
+  .card.black { color: #1f1a17; }
+  .card .idx.br { display: none; }
+  .card .pip { padding-left: 10px; }
+  .card.lifted { box-shadow: 0 12px 20px rgba(80, 60, 20, 0.35); }
+  .pile.empty { border: 1.5px dashed #b5a47f; }
+  .pile.empty::after { color: #9a8a6a; font-family: system-ui, sans-serif; font-size: 10px; }
+  .pile.drop-ok::before { box-shadow: 0 0 0 3px #bc6c25, 0 0 14px rgba(188, 108, 37, 0.6); }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design C · Paper rows · desktop</h2>
+  <nav><a href="index.html">All mockups</a><a href="c-paper-mobile.html">Mobile version</a></nav>
+  <ul>
+    <li>Warm paper look, serif type, ink-coloured suits.</li>
+    <li>The tableau is turned 90°: each pile is a horizontal <em>row</em> fanned to the right, with the playable card on the right end. On desktop the 11 rows are split into two groups (1–6, 7–11).</li>
+    <li>Foundations and stock run down the left side.</li>
+  </ul>
+</div>
+
+<div class="frame desktop board">
+  <header class="bar">
+    <h1>Solitaire</h1>
+    <span class="wins">Wins — 12</span>
+    <button class="btn">New deal</button>
+  </header>
+  <div class="main">
+    <div class="side">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+      <div class="sep"></div>
+      <div data-slot="stock" data-label="Stock"></div>
+    </div>
+    <div class="rows">
+      <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div>
+      <div data-slot="t3"></div><div data-slot="t4"></div><div data-slot="t5"></div>
+    </div>
+    <div class="rows">
+      <div data-slot="t6"></div><div data-slot="t7"></div><div data-slot="t8"></div>
+      <div data-slot="t9"></div><div data-slot="t10"></div>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  Mock.render({ dx: 28 });
+  document.querySelectorAll('.rows [data-slot]').forEach((el) => {
+    const label = document.createElement('span');
+    label.className = 'row-label';
+    label.textContent = +el.dataset.slot.slice(1) + 1;
+    el.prepend(label);
+  });
+</script>
+</body>
+</html>

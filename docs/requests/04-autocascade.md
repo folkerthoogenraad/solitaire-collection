@@ -1,0 +1,1 @@
+Whenever a card, like the A is moved to a foundation, and it is possible to move _more_ cards automatically, I want a small button to appear for a few seconds that says "autocascade".

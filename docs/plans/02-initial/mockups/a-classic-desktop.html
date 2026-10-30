@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A · Classic felt · desktop</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board {
+    --cw: 92px; --ch: 128px; --r: 8px;
+    --rank-fs: 19px; --suit-fs: 15px; --pip-fs: 46px;
+    background: radial-gradient(ellipse at 50% 25%, #2f8a4e, #17572d 75%);
+    color: #fff;
+  }
+  .bar { height: 52px; display: flex; align-items: center; gap: 20px; padding: 0 28px; background: rgba(0, 0, 0, 0.25); }
+  .bar h1 { flex: 1; margin: 0; font-size: 18px; font-weight: 600; }
+  .wins { opacity: 0.85; font-size: 15px; }
+  .btn { background: #f5d76e; color: #3a2c00; border: 0; border-radius: 6px; padding: 8px 16px; font: inherit; font-weight: 600; }
+
+  .top { display: flex; justify-content: space-between; padding: 24px 64px 0; }
+  .found { display: flex; gap: 14px; }
+  .tableau { display: flex; gap: 14px; justify-content: center; align-items: flex-start; padding: 28px 64px; }
+
+  .card { background: #fff; border: 1px solid rgba(0, 0, 0, 0.15); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+  .card.red { color: #c62828; }
+  .card.black { color: #1a1a1a; }
+  .card.lifted { box-shadow: 0 14px 24px rgba(0, 0, 0, 0.45); }
+  .pile.empty { border: 2px dashed rgba(255, 255, 255, 0.35); }
+  .pile.empty::after { color: rgba(255, 255, 255, 0.5); }
+  .pile.drop-ok::before { box-shadow: 0 0 0 3px #f5d76e, 0 0 18px #f5d76e; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design A · Classic felt · desktop</h2>
+  <nav><a href="index.html">All mockups</a><a href="a-classic-mobile.html">Mobile version</a></nav>
+  <ul>
+    <li>Traditional look: green felt, white cards, red/black suits. Stock top-left, foundations top-right, 11 columns underneath.</li>
+    <li>Shown: the ♦9–5 run being dragged onto ♦10 (gold glow marks the valid drop target).</li>
+  </ul>
+</div>
+
+<div class="frame desktop board">
+  <header class="bar">
+    <h1>Solitaire</h1>
+    <span class="wins">Wins: 12</span>
+    <button class="btn">New deal</button>
+  </header>
+  <div class="top">
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="found">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    </div>
+  </div>
+  <div class="tableau">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div><div data-slot="t3"></div>
+    <div data-slot="t4"></div><div data-slot="t5"></div><div data-slot="t6"></div><div data-slot="t7"></div>
+    <div data-slot="t8"></div><div data-slot="t9"></div><div data-slot="t10"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dy: 40 });</script>
+</body>
+</html>

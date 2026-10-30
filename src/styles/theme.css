@@ -1,0 +1,38 @@
+/* Theme: every colour is a variable so it can be tweaked in one place. */
+:root {
+  /* Table */
+  --felt-center: #6b8563;
+  --felt-edge: #565b36;
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.75);
+
+  /* Controls */
+  --btn-bg: #efe3ba;
+  --btn-text: #594711;
+
+  /* Cards */
+  --card-bg: #e5ddcc;
+  --card-border: rgba(0, 0, 0, 0.15);
+  --card-shadow: rgb(0 0 0 / 30%);
+  --card-lifted-shadow: rgba(0, 0, 0, 0.45);
+
+  /* Suits: separate on purpose, even where they match */
+  --suit-spades: #262649;
+  --suit-hearts: #bd6060;
+  --suit-diamonds: #bb7449;
+  --suit-clubs: #295331;
+
+  /* Tableau card the held card belongs on (same suit, one rank higher) */
+  --card-hint-bg: #f4eee1;
+  --card-hint-ring: rgb(255 255 255 / 55%);
+
+  /* Empty slots, band divider and drop highlight */
+  --slot-border: rgba(255, 255, 255, 0.35);
+  --slot-label: rgb(255 255 255 / 24%);
+  --drop-highlight: #b3a77b;
+
+  /* Win overlay */
+  --win-backdrop: rgb(0 0 0 / 30%);
+  --win-panel-bg: #e5ddcc;
+  --win-panel-text: #594711;
+}

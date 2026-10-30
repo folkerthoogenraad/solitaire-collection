@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C · Paper rows · mobile</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board {
+    --cw: 36px; --ch: 50px; --r: 4px;
+    --rank-fs: 13px; --suit-fs: 11px; --pip-fs: 18px; --idx-pad: 3px;
+    --lift-x: 0px; --lift-y: -6px;
+    background: radial-gradient(ellipse at 30% 10%, #f6efdf, #e6d9bc 85%);
+    color: #2b2118;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .bar { height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid #cdbf9f; }
+  .bar h1 { flex: 1; margin: 0; font-size: 19px; font-style: italic; font-weight: 400; }
+  .wins { font-size: 13px; }
+  .btn { background: transparent; color: #2b2118; border: 1.5px solid #2b2118; border-radius: 4px; padding: 4px 10px; font: inherit; font-size: 13px; }
+
+  .top {
+    --cw: 52px; --ch: 72px; --rank-fs: 15px; --suit-fs: 12px; --pip-fs: 26px;
+    display: flex; justify-content: space-between; padding: 10px 12px;
+  }
+  .top .card .pip { padding-left: 0; }
+  .found { display: flex; gap: 6px; }
+
+  .rows { display: flex; flex-direction: column; gap: 4px; padding: 4px 12px; }
+  .card { background: #fbf7ee; border: 1px solid #cdbf9f; box-shadow: 1px 1px 0 rgba(80, 60, 20, 0.15); }
+  .card.red { color: #a4161a; }
+  .card.black { color: #1f1a17; }
+  .card .idx.br { display: none; }
+  .rows .card .pip { padding-left: 14px; }
+  .rows .card.face .pip .fr { font-size: 13px; }
+  .card.lifted { box-shadow: 0 8px 14px rgba(80, 60, 20, 0.35); }
+  .pile.empty { border: 1.5px dashed #b5a47f; }
+  .pile.empty::after { color: #9a8a6a; font-family: system-ui, sans-serif; font-size: 9px; }
+  .pile.drop-ok::before { inset: -3px; box-shadow: 0 0 0 2px #bc6c25, 0 0 12px rgba(188, 108, 37, 0.6); }
+  .hint { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 12px; color: #7a6a4a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design C · Paper rows · mobile (390 × 844)</h2>
+  <nav><a href="index.html">All mockups</a><a href="c-paper-desktop.html">Desktop version</a></nav>
+  <ul>
+    <li>Rotated tableau: 11 horizontal rows stacked vertically, using the phone's height for the pile count and its width for pile length.</li>
+    <li>The visible strip of a covered card is 22 px wide by 50 px tall, which is a much bigger target than Design A's 32 × 18. Rank and suit stack vertically in the strip.</li>
+    <li>A full 14-card row is 13 × 22 + 36 = 322 px, which fits in 366 px. The 11 rows take about 590 px.</li>
+    <li>Trade-off: unconventional for solitaire, since you drag along the rows instead of down columns. Desktop uses rows as well, so the two layouts stay the same game.</li>
+  </ul>
+</div>
+
+<div class="frame phone board">
+  <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+  <header class="bar">
+    <h1>Solitaire</h1>
+    <span class="wins">Wins 12</span>
+    <button class="btn">New deal</button>
+  </header>
+  <div class="top">
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="found">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    </div>
+  </div>
+  <div class="rows">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div><div data-slot="t3"></div>
+    <div data-slot="t4"></div><div data-slot="t5"></div><div data-slot="t6"></div><div data-slot="t7"></div>
+    <div data-slot="t8"></div><div data-slot="t9"></div><div data-slot="t10"></div>
+  </div>
+  <div class="hint">Playable card is on the right of each row</div>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dx: 22 });</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D · Classic felt (revised) · desktop</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="d-felt-theme.css">
+<style>
+  .board {
+    --cw: 92px; --ch: 128px; --r: 8px;
+    --rank-fs: 19px; --suit-fs: 15px; --pip-fs: 46px;
+  }
+  /* No navbar: stock | controls | foundations share the top row */
+  .top { display: flex; align-items: center; gap: 14px; padding: 32px 64px 0; }
+  .top .controls { flex: 1; flex-direction: row; gap: 20px; }
+  .wins { font-size: 16px; }
+  .wins b { font-size: 22px; margin-left: 4px; }
+  .btn { padding: 9px 18px; font-size: 15px; }
+  .found { display: flex; gap: 14px; }
+  .tableau { display: flex; gap: 14px; justify-content: center; align-items: flex-start; padding: 32px 64px; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design D · Classic felt (revised) · desktop</h2>
+  <nav><a href="index.html">All mockups</a><a href="d-felt-mobile.html">Mobile version</a></nav>
+  <ul>
+    <li>Design A's look with the navbar removed. The win count and New deal sit in the gap between the stock and the foundations.</li>
+    <li>All colours are CSS variables in <code>d-felt-theme.css</code>: felt, text, button, card, each suit separately, empty slots and drop highlight.</li>
+  </ul>
+</div>
+
+<div class="frame desktop board">
+  <div class="top">
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="controls">
+      <span class="wins">Wins <b>12</b></span>
+      <button class="btn">New deal</button>
+    </div>
+    <div class="found">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    </div>
+  </div>
+  <div class="tableau">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div><div data-slot="t3"></div>
+    <div data-slot="t4"></div><div data-slot="t5"></div><div data-slot="t6"></div><div data-slot="t7"></div>
+    <div data-slot="t8"></div><div data-slot="t9"></div><div data-slot="t10"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dy: 40 });</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+:root {
+  --move-ms: 220ms;
+  --deal-ms: 320ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--felt-edge);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.board {
+  position: fixed;
+  inset: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: radial-gradient(ellipse at 50% 25%, var(--felt-center), var(--felt-edge) 75%);
+  touch-action: none;
+  /* Defined here, not on :root, because --cw is set on this element. ~8px on desktop, smaller on phones. */
+  --radius: clamp(4px, calc(var(--cw) * 0.08), 8px);
+}
+
+.layer { position: relative; width: 100%; height: 100%; }
+
+.slot, .card, .drop-hl, .controls, .divider {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+/* Empty piles */
+.slot {
+  width: var(--cw);
+  height: calc(var(--cw) * 1.4);
+  border: 2px dashed var(--slot-border);
+  border-radius: var(--radius);
+}
+.slot::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--slot-label);
+  font-size: calc(var(--cw) * 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.divider { height: 1px; background: var(--slot-border); opacity: 0.6; }
+
+/* Cards */
+.card {
+  width: var(--cw);
+  height: calc(var(--cw) * 1.4);
+  transition: transform var(--move-ms) var(--ease);
+  cursor: grab;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 calc(var(--cw) * 0.12) calc(var(--cw) * 0.24) var(--card-lifted-shadow);
+  opacity: 0;
+  transition: opacity 120ms;
+  pointer-events: none;
+}
+.card.dragging { transition: none; cursor: grabbing; }
+.card.dragging::before { opacity: 1; }
+.board.no-anim .card { transition: none; }
+.board.dealing .card { transition-duration: var(--deal-ms); }
+
+.face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 1px 2px var(--card-shadow);
+  transition: background-color 120ms, box-shadow 120ms;
+}
+.card.hint .face {
+  background: var(--card-hint-bg);
+  box-shadow: 0 1px 2px var(--card-shadow), inset 0 0 0 2px var(--card-hint-ring);
+}
+.face[data-suit="spades"] { color: var(--suit-spades); }
+.face[data-suit="hearts"] { color: var(--suit-hearts); }
+.face[data-suit="diamonds"] { color: var(--suit-diamonds); }
+.face[data-suit="clubs"] { color: var(--suit-clubs); }
+
+.idx {
+  position: absolute;
+  top: calc(var(--cw) * 0.05);
+  left: calc(var(--cw) * 0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-weight: 700;
+}
+.idx .r { font-size: calc(var(--cw) * 0.21); letter-spacing: -0.05em; }
+.idx .s { font-size: calc(var(--cw) * 0.165); }
+.idx.br { top: auto; left: auto; bottom: calc(var(--cw) * 0.05); right: calc(var(--cw) * 0.07); transform: rotate(180deg); }
+
+/* One-line index when the column is fanned tightly (always in narrow mode) */
+.card.compact .idx:not(.br) { flex-direction: row; gap: calc(var(--cw) * 0.02); }
+.card.compact .idx .r { font-size: calc(var(--cw) * 0.24); }
+.card.compact .idx .s { font-size: calc(var(--cw) * 0.19); }
+
+.pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cw) * 0.5);
+  line-height: 1;
+}
+.court .pip .cr { font-size: calc(var(--cw) * 0.4); font-weight: 800; }
+.court .pip .cs { font-size: calc(var(--cw) * 0.28); }
+
+.board[data-mode="narrow"] .idx.br { display: none; }
+.board[data-mode="narrow"] .pip { padding-top: calc(var(--cw) * 0.28); font-size: calc(var(--cw) * 0.46); }
+.board[data-mode="narrow"] .court .pip .cr { font-size: calc(var(--cw) * 0.34); }
+
+.card.nope .face { animation: nope 240ms ease; }
+@keyframes nope {
+  20%, 60% { transform: translateX(calc(var(--cw) * -0.05)); }
+  40%, 80% { transform: translateX(calc(var(--cw) * 0.05)); }
+}
+.card.celebrate .face { animation: hop 600ms var(--ease) var(--delay, 0ms) both; }
+@keyframes hop {
+  40% { transform: translateY(calc(var(--cw) * -0.3)) rotate(-4deg); }
+}
+
+/* Drop target highlight */
+.drop-hl {
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 3px var(--drop-highlight), 0 0 18px var(--drop-highlight);
+  opacity: 0;
+  transition: opacity 100ms;
+  pointer-events: none;
+  z-index: 900;
+}
+.drop-hl.show { opacity: 1; }
+
+/* Win counter + New deal, between the stock and the foundations */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--cw) * 0.2);
+  font-size: calc(var(--cw) * 0.17);
+}
+.board[data-mode="narrow"] .controls { flex-direction: column; gap: calc(var(--cw) * 0.1); font-size: calc(var(--cw) * 0.2); }
+.wins { color: var(--text-muted); white-space: nowrap; }
+.wins b { color: var(--text); font-size: 1.35em; margin-left: 0.15em; }
+
+.btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 0;
+  border-radius: 6px;
+  padding: 0.5em 1em;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 120ms var(--ease), filter 120ms;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: scale(0.96); }
+
+/* Win overlay */
+.win {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--win-backdrop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms;
+  z-index: 2000;
+}
+.win.show { opacity: 1; pointer-events: auto; }
+.win .panel {
+  background: var(--win-panel-bg);
+  color: var(--win-panel-text);
+  border-radius: 12px;
+  padding: 24px 36px;
+  text-align: center;
+  box-shadow: 0 20px 40px var(--card-lifted-shadow);
+  transform: scale(0.9);
+  transition: transform 300ms var(--ease);
+}
+.win.show .panel { transform: scale(1); }
+.win h2 { margin: 0 0 8px; font-size: 28px; }
+.win p { margin: 0 0 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .board.dealing .card { transition-duration: 0ms; }
+  .card.celebrate .face, .card.nope .face { animation: none; }
+}

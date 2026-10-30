@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>B · Midnight · desktop</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board {
+    --cw: 80px; --ch: 112px; --r: 10px;
+    --rank-fs: 22px; --suit-fs: 16px; --pip-fs: 40px; --idx-pad: 6px; --idx-dir: row;
+    background: #0f1115; color: #e9ecef;
+    display: grid; grid-template-columns: 1fr 160px;
+  }
+  .tableau { display: flex; gap: 14px; justify-content: center; align-items: flex-start; padding: 40px 32px; }
+
+  .side {
+    --cw: 72px; --ch: 100px; --rank-fs: 19px; --pip-fs: 34px;
+    background: #16181d; border-left: 1px solid #23262e;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 0;
+  }
+  .side h1 { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #868e96; }
+  .side .sep { height: 1px; width: 72px; background: #23262e; margin: 6px 0; }
+  .side .foot { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .wins { font-size: 28px; font-weight: 800; line-height: 1; }
+  .wins small { display: block; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; color: #868e96; text-transform: uppercase; margin-top: 4px; text-align: center; }
+  .btn { background: #4dabf7; color: #0b1a29; border: 0; border-radius: 999px; padding: 8px 18px; font: inherit; font-weight: 700; }
+
+  /* Four-colour deck: easier to tell suits apart at small sizes */
+  .card { background: #f3f2ee; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
+  .card .idx { font-weight: 800; }
+  .card .pip { opacity: 0.9; }
+  .suit-S { color: #1f2125; } .suit-H { color: #e03131; } .suit-D { color: #1971c2; } .suit-C { color: #2f9e44; }
+  .card .idx.br { display: none; }
+  .card.lifted { box-shadow: 0 16px 30px rgba(0, 0, 0, 0.7); }
+  .pile.empty { border: 1.5px dashed #3a3f4b; }
+  .pile.empty::after { color: #5c6370; }
+  .pile.drop-ok::before { box-shadow: 0 0 0 3px #4dabf7, 0 0 22px rgba(77, 171, 247, 0.7); }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design B · Midnight · desktop</h2>
+  <nav><a href="index.html">All mockups</a><a href="b-midnight-mobile.html">Mobile version</a></nav>
+  <ul>
+    <li>Dark, flat and minimal, with a four-colour deck (♠ black, ♥ red, ♦ blue, ♣ green). The rules only care about suit, so suit colour carries the information that matters.</li>
+    <li>Foundations, stock, win counter and New deal sit in a right sidebar, so the full height goes to the tableau.</li>
+  </ul>
+</div>
+
+<div class="frame desktop board">
+  <main class="tableau">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div><div data-slot="t3"></div>
+    <div data-slot="t4"></div><div data-slot="t5"></div><div data-slot="t6"></div><div data-slot="t7"></div>
+    <div data-slot="t8"></div><div data-slot="t9"></div><div data-slot="t10"></div>
+  </main>
+  <aside class="side">
+    <h1>Solitaire</h1>
+    <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    <div class="sep"></div>
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="foot">
+      <div class="wins">12<small>Wins</small></div>
+      <button class="btn">New deal</button>
+    </div>
+  </aside>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dy: 34 });</script>
+</body>
+</html>

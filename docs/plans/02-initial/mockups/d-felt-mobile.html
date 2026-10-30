@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D · Classic felt (revised) · mobile</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="d-felt-theme.css">
+<style>
+  .board {
+    --cw: 58px; --ch: 80px; --r: 6px;
+    --rank-fs: 16px; --suit-fs: 12px; --pip-fs: 28px; --idx-pad: 4px; --idx-dir: row;
+    --lift-x: 0px; --lift-y: -8px;
+  }
+  /* Top row: stock | controls | foundations (same order as desktop) */
+  .top {
+    --cw: 48px; --ch: 66px; --rank-fs: 14px; --suit-fs: 11px; --pip-fs: 22px; --idx-dir: column; --idx-pad: 3px;
+    display: flex; align-items: center; gap: 6px; padding: 10px 10px 12px;
+  }
+  .top .controls { flex: 1; gap: 6px; }
+  .top .card .pip { padding-top: 10px; }
+  .wins { font-size: 12px; }
+  .wins b { font-size: 15px; margin-left: 2px; }
+  .btn { padding: 5px 10px; font-size: 12px; }
+  .found { display: flex; gap: 5px; }
+
+  .band { display: flex; gap: 5px; justify-content: center; align-items: flex-start; padding: 12px 4px 0; }
+  .band.one { min-height: 340px; }
+  .band.two { border-top: 1px solid var(--slot-border); }
+
+  .card .idx.br { display: none; }
+  .band .card .pip { padding-top: 16px; }
+  .pile.empty::after { font-size: 9px; }
+  .pile.drop-ok::before { inset: -3px; box-shadow: 0 0 0 2px var(--drop-highlight), 0 0 12px var(--drop-highlight); }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design D · Classic felt (revised) · mobile (390 × 844)</h2>
+  <nav><a href="index.html">All mockups</a><a href="d-felt-desktop.html">Desktop version</a></nav>
+  <ul>
+    <li>Classic felt look with Midnight's two-band tableau: columns 1–6 on top, 7–11 below, 58 px cards.</li>
+    <li>No navbar. The win count and New deal sit between the stock and the foundations, as on desktop.</li>
+    <li>Colours come from the same <code>d-felt-theme.css</code> variables as desktop.</li>
+  </ul>
+</div>
+
+<div class="frame phone board">
+  <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+  <div class="top">
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="controls">
+      <span class="wins">Wins <b>12</b></span>
+      <button class="btn">New deal</button>
+    </div>
+    <div class="found">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    </div>
+  </div>
+  <div class="band one">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div>
+    <div data-slot="t3"></div><div data-slot="t4"></div><div data-slot="t5"></div>
+  </div>
+  <div class="band two">
+    <div data-slot="t6"></div><div data-slot="t7"></div><div data-slot="t8"></div>
+    <div data-slot="t9"></div><div data-slot="t10"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dy: 22 });</script>
+</body>
+</html>

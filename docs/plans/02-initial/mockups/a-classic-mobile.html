@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A · Classic felt · mobile</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .board {
+    --cw: 32px; --ch: 46px; --r: 4px;
+    --rank-fs: 12px; --suit-fs: 10px; --pip-fs: 20px;
+    --idx-dir: row; --idx-pad: 2px;
+    --lift-x: 0px; --lift-y: -8px;
+    background: radial-gradient(ellipse at 50% 20%, #2f8a4e, #17572d 80%);
+    color: #fff;
+  }
+  .bar { height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: rgba(0, 0, 0, 0.25); }
+  .bar h1 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; }
+  .wins { opacity: 0.85; font-size: 13px; }
+  .btn { background: #f5d76e; color: #3a2c00; border: 0; border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 13px; font-weight: 600; }
+
+  /* Top row gets bigger cards: only 5 slots across */
+  .top {
+    --cw: 58px; --ch: 80px; --rank-fs: 15px; --suit-fs: 13px; --pip-fs: 30px; --idx-dir: column; --idx-pad: 4px;
+    display: flex; justify-content: space-between; padding: 14px 8px 10px;
+  }
+  .top .card .pip { padding-top: 0; }
+  .found { display: flex; gap: 6px; }
+
+  .tableau { display: flex; gap: 2px; justify-content: center; align-items: flex-start; padding: 6px 4px; }
+  .tableau .card .idx.br { display: none; }
+  .tableau .card .pip { padding-top: 14px; }
+  .tableau .card.face .pip .fr { font-size: 13px; }
+
+  .card { background: #fff; border: 1px solid rgba(0, 0, 0, 0.18); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); }
+  .card.red { color: #c62828; }
+  .card.black { color: #1a1a1a; }
+  .card.lifted { box-shadow: 0 8px 14px rgba(0, 0, 0, 0.45); }
+  .pile.empty { border: 1.5px dashed rgba(255, 255, 255, 0.35); }
+  .pile.empty::after { color: rgba(255, 255, 255, 0.5); font-size: 9px; }
+  .pile.drop-ok::before { inset: -3px; box-shadow: 0 0 0 2px #f5d76e, 0 0 12px #f5d76e; }
+  .hint { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 12px; opacity: 0.6; }
+</style>
+</head>
+<body>
+<div class="caption">
+  <h2>Design A · Classic felt · mobile (390 × 844)</h2>
+  <nav><a href="index.html">All mockups</a><a href="a-classic-desktop.html">Desktop version</a></nav>
+  <ul>
+    <li>Same structure as desktop: 11 narrow columns (32 px). Covered cards only show a one-line index (rank and suit side by side); the top card also shows a suit pip.</li>
+    <li>Portrait is tall, so long columns are fine: a full 14-card run is 13 × 18 + 46 ≈ 280 px.</li>
+    <li>Risk: 32 px is a small touch target. A drag has to grab the whole column strip, and the dragged card has to lift above the thumb.</li>
+  </ul>
+</div>
+
+<div class="frame phone board">
+  <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+  <header class="bar">
+    <h1>Solitaire</h1>
+    <span class="wins">Wins 12</span>
+    <button class="btn">New deal</button>
+  </header>
+  <div class="top">
+    <div data-slot="stock" data-label="Stock"></div>
+    <div class="found">
+      <div data-slot="f0"></div><div data-slot="f1"></div><div data-slot="f2"></div><div data-slot="f3"></div>
+    </div>
+  </div>
+  <div class="tableau">
+    <div data-slot="t0"></div><div data-slot="t1"></div><div data-slot="t2"></div><div data-slot="t3"></div>
+    <div data-slot="t4"></div><div data-slot="t5"></div><div data-slot="t6"></div><div data-slot="t7"></div>
+    <div data-slot="t8"></div><div data-slot="t9"></div><div data-slot="t10"></div>
+  </div>
+  <div class="hint">Drag cards or runs · top card is at the bottom of each column</div>
+</div>
+
+<script src="shared.js"></script>
+<script>Mock.render({ dy: 18 });</script>
+</body>
+</html>

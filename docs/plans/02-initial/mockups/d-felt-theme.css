@@ -1,0 +1,47 @@
+/* Design D theme: every colour is a variable so it can be tweaked in one place. */
+:root {
+  /* Table */
+  --felt-center: #2f8a4e;
+  --felt-edge: #17572d;
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.75);
+
+  /* Controls */
+  --btn-bg: #f5d76e;
+  --btn-text: #3a2c00;
+
+  /* Cards */
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.15);
+  --card-shadow: rgba(0, 0, 0, 0.35);
+  --card-lifted-shadow: rgba(0, 0, 0, 0.45);
+
+  /* Suits: separate on purpose, even where they currently match */
+  --suit-spades: #1a1a1a;
+  --suit-hearts: #c62828;
+  --suit-diamonds: #c62828;
+  --suit-clubs: #1a1a1a;
+
+  /* Empty slots and drop highlight */
+  --slot-border: rgba(255, 255, 255, 0.35);
+  --slot-label: rgba(255, 255, 255, 0.5);
+  --drop-highlight: #f5d76e;
+}
+
+.board { background: radial-gradient(ellipse at 50% 25%, var(--felt-center), var(--felt-edge) 75%); color: var(--text); }
+
+.card { background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 1px 2px var(--card-shadow); }
+.card.suit-S { color: var(--suit-spades); }
+.card.suit-H { color: var(--suit-hearts); }
+.card.suit-D { color: var(--suit-diamonds); }
+.card.suit-C { color: var(--suit-clubs); }
+.card.lifted { box-shadow: 0 12px 22px var(--card-lifted-shadow); }
+
+.pile.empty { border: 2px dashed var(--slot-border); }
+.pile.empty::after { color: var(--slot-label); }
+.pile.drop-ok::before { box-shadow: 0 0 0 3px var(--drop-highlight), 0 0 18px var(--drop-highlight); }
+
+.controls { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.wins { color: var(--text-muted); }
+.wins b { color: var(--text); }
+.btn { background: var(--btn-bg); color: var(--btn-text); border: 0; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer; }
