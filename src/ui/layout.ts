@@ -4,6 +4,8 @@ import type { Variant } from '../core/variant';
 export const CARD_RATIO = 1.4;
 /** Smallest fan (× card width) that still shows a one-line index. */
 const MIN_FAN = 0.34;
+/** Largest card width (px) per mode; this is what caps the board width on big screens. */
+const MAX_CARD_W = { wide: 150, narrow: 110 };
 
 export interface Rect {
   x: number;
@@ -78,7 +80,7 @@ function wideLayout(width: number, height: number, variant: Variant): Layout {
   const byWidth = (width - 2 * pad) / (n + (n - 1) * gapR);
   // Room for the top row plus a 10-card column at minimum fan.
   const byHeight = (height - 2 * pad) / (CARD_RATIO + 0.3 + CARD_RATIO + 9 * MIN_FAN);
-  const cw = Math.max(Math.min(byWidth, byHeight, 120), 10);
+  const cw = Math.max(Math.min(byWidth, byHeight, MAX_CARD_W.wide), 10);
   const ch = cw * CARD_RATIO;
   const gap = cw * gapR;
   const total = n * cw + (n - 1) * gap;
@@ -105,7 +107,7 @@ function narrowLayout(width: number, height: number, variant: Variant): Layout {
   const byWidth = (width - 2 * pad) / (perBand + (perBand - 1) * gapR);
   // Top row plus two bands, each fitting a 7-card column at minimum fan.
   const byHeight = (height - 2 * pad) / (CARD_RATIO * topScale + 0.5 + 2 * (CARD_RATIO + 6 * MIN_FAN));
-  const cw = Math.max(Math.min(byWidth, byHeight, 110), 10);
+  const cw = Math.max(Math.min(byWidth, byHeight, MAX_CARD_W.narrow), 10);
   const ch = cw * CARD_RATIO;
   const gap = cw * gapR;
   const total = perBand * cw + (perBand - 1) * gap;

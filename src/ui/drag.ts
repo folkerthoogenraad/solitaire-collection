@@ -1,7 +1,7 @@
 import { pileKind, type GameState, type Move, type PileId } from '../core/state';
 import type { Variant } from '../core/variant';
 import type { Rect } from './layout';
-import type { Renderer } from './renderer';
+import { DRAG_SCALE, type Renderer } from './renderer';
 
 export interface DragHost {
   variant: Variant;
@@ -19,15 +19,22 @@ interface Session {
   ids: string[];
   startX: number;
   startY: number;
-  /** Extra vertical offset on touch so the finger doesn't cover the cards. */
+  /** Extra vertical offset on touch so the finger doesn't cover the cards; eased in from `liftStart`. */
   lift: number;
-  active: boolean;
+  liftStart: number;
   dx: number;
   dy: number;
   target: PileId | null;
 }
 
-const DRAG_THRESHOLD = 4;
+/** Matches the shadow's lift transition, so card and shadow rise together. */
+const LIFT_MS = 160;
+
+/** Current touch lift, eased out over `LIFT_MS`. */
+function liftOf(s: Session, now: number): number {
+  const t = Math.min((now - s.liftStart) / LIFT_MS, 1);
+  return s.lift * (1 - (1 - t) ** 3);
+}
 
 function overlap(a: Rect, b: Rect): number {
   const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
@@ -67,13 +74,13 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
   let hintPointer: number | null = null;
 
   /** Legal pile with the largest overlap with the dragged card. */
-  function findTarget(s: Session): PileId | null {
+  function findTarget(s: Session, lift: number): PileId | null {
     const state = host.state();
     const lead = renderer.positionOf(s.ids[0]!);
-    const scale = lead.scale * 1.04;
+    const scale = lead.scale * DRAG_SCALE;
     const dragged: Rect = {
       x: lead.x + s.dx,
-      y: lead.y + s.dy + s.lift,
+      y: lead.y + s.dy + lift,
       w: renderer.layout.cardW * scale,
       h: renderer.layout.cardH * scale,
     };
@@ -92,10 +99,14 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
 
   function update() {
     frame = 0;
-    if (!session?.active) return;
-    renderer.dragTo(session.ids, session.dx, session.dy + session.lift);
-    session.target = findTarget(session);
+    if (!session) return;
+    const now = performance.now();
+    const lift = liftOf(session, now);
+    renderer.dragTo(session.ids, session.dx, session.dy + lift);
+    session.target = findTarget(session, lift);
     renderer.highlight(session.target ? renderer.topRect(host.state(), session.target) : null);
+    // Keep animating while the lift eases in, even if the finger holds still.
+    if (now - session.liftStart < LIFT_MS) frame = requestAnimationFrame(update);
   }
 
   function finish(drop: boolean) {
@@ -104,7 +115,8 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
     renderer.hint(null);
-    if (!s?.active) return;
+    surface.classList.remove('grabbing');
+    if (!s) return;
 
     renderer.highlight(null);
     renderer.endDrag(s.ids);
@@ -143,6 +155,8 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
       hintPointer = e.pointerId;
       return;
     }
+    // The surface holds pointer capture, so the cursor has to be set there rather than on the card.
+    surface.classList.add('grabbing');
     session = {
       pointerId: e.pointerId,
       from,
@@ -150,11 +164,14 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
       startX: e.clientX,
       startY: e.clientY,
       lift: e.pointerType === 'touch' ? -renderer.layout.cardH * 0.25 : 0,
-      active: false,
+      liftStart: performance.now(),
       dx: 0,
       dy: 0,
       target: null,
     };
+    // Lift right away on press, not on the first move.
+    renderer.beginDrag(ids);
+    frame = requestAnimationFrame(update);
   });
 
   surface.addEventListener('pointermove', (e) => {
@@ -162,11 +179,6 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     if (!s || e.pointerId !== s.pointerId) return;
     s.dx = e.clientX - s.startX;
     s.dy = e.clientY - s.startY;
-    if (!s.active) {
-      if (Math.hypot(s.dx, s.dy) < DRAG_THRESHOLD) return;
-      s.active = true;
-      renderer.beginDrag(s.ids);
-    }
     if (!frame) frame = requestAnimationFrame(update);
   });
 
@@ -181,7 +193,7 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     if (releaseHint(e)) return;
     if (session && e.pointerId === session.pointerId) {
       // Make sure the drop uses the final pointer position.
-      if (session.active) update();
+      update();
       finish(true);
     }
   });

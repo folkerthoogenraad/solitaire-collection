@@ -21,13 +21,18 @@ export interface RenderOptions {
   deal?: boolean;
 }
 
-const MOVE_MS = 220;
+/** Card move and deal durations; also written to the board as `--move-ms` / `--deal-ms` for the CSS transitions. */
+const MOVE_MS = 400;
 const DEAL_STAGGER_MS = 14;
 const DEAL_MS = 320;
 const RAISED_Z = 500;
 const DRAG_Z = 1000;
+/** Size of a dragged card relative to resting; depth comes from the lifted shadow instead. */
+export const DRAG_SCALE = 1;
 
-const transform = (x: number, y: number, scale: number) => `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+/** Snaps to device pixels: a card on its own compositor layer at a fractional offset gets resampled and looks blurry. */
+const snap = (v: number) => Math.round(v * devicePixelRatio) / devicePixelRatio;
+const transform = (x: number, y: number, scale: number) => `translate3d(${snap(x)}px, ${snap(y)}px, 0) scale(${scale})`;
 
 function div(className: string): HTMLDivElement {
   const el = document.createElement('div');
@@ -72,6 +77,8 @@ export class Renderer {
     }
     this.layer.append(this.highlightEl, controls);
     board.append(this.layer);
+    board.style.setProperty('--move-ms', `${MOVE_MS}ms`);
+    board.style.setProperty('--deal-ms', `${DEAL_MS}ms`);
   }
 
   setLayout(layout: Layout): void {
@@ -132,6 +139,9 @@ export class Renderer {
   beginDrag(ids: readonly string[]): void {
     ids.forEach((id, i) => {
       const el = this.cards.get(id)!;
+      // A card grabbed while still settling from a previous move: its pending reset would drop it below the rest of the stack.
+      clearTimeout(this.raised.get(id));
+      this.raised.delete(id);
       el.classList.add('dragging');
       el.style.zIndex = String(DRAG_Z + i);
     });
@@ -141,7 +151,7 @@ export class Renderer {
   dragTo(ids: readonly string[], dx: number, dy: number): void {
     for (const id of ids) {
       const p = this.pos.get(id)!;
-      const t = transform(p.x + dx, p.y + dy, p.scale * 1.04);
+      const t = transform(p.x + dx, p.y + dy, p.scale * DRAG_SCALE);
       this.cards.get(id)!.style.transform = t;
       this.written.set(id, t);
     }

@@ -19,7 +19,7 @@ npm run export:classic  # regenerate skins/classic images and templates (needs E
 - `src/persistence`: versioned save/load with validation.
 - `src/ui`: layout engine, renderer (one element per card, moved by transforms only), drag & drop, controls, win overlay.
 - `src/styles/theme.css`: every colour as a CSS variable.
-- `src/ui/skin`: skin loading and card faces. Skins live in [`skins/`](skins/README.md); pick one with `?skin=<id>`.
+- `src/ui/skin`: skin loading and card faces. Skins live in [`skins/`](skins/README.md); pick one with `?skin=<id>`. Animations follow the OS "reduce motion" setting unless overridden with `?motion=full|reduced` (`?motion=system` goes back to the default). Both are remembered.
 - `tools/`: dev-only pages: the classic exporter and a skin gallery (`/tools/gallery.html?skin=<id>` on the dev server).
 
 Plans: [`docs/plans/02-initial`](docs/plans/02-initial/PLAN.md) (with mockups), [`docs/plans/03-skins`](docs/plans/03-skins/PLAN.md).

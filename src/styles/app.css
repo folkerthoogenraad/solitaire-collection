@@ -1,7 +1,11 @@
 :root {
-  --move-ms: 220ms;
-  --deal-ms: 320ms;
+  /* --move-ms (set from MOVE_MS in JS) */
+  /* --deal-ms (set from DEAL_MS in JS) */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease: cubic-bezier(0,.76,.63,1.01);
+  --ease: cubic-bezier(.52,.03,.43,1.39);
+  --ease: cubic-bezier(.61,0,.29,1);
+  --ease: cubic-bezier(.25,0,.29,1);
 }
 
 * { box-sizing: border-box; }
@@ -68,6 +72,8 @@ body {
   width: var(--cw);
   height: calc(var(--cw) * 1.4);
   transition: transform var(--move-ms) var(--ease);
+  /* Own layer up front: promoting on the first animated frame costs a re-raster that eats the start of the transition */
+  will-change: transform;
   cursor: grab;
 }
 .card::before {
@@ -75,13 +81,26 @@ body {
   position: absolute;
   inset: 0;
   border-radius: var(--radius);
-  box-shadow: 0 calc(var(--cw) * 0.12) calc(var(--cw) * 0.24) var(--card-lifted-shadow);
+  /*
+   * Sharp shadow that slides down while dragging, so the card looks lifted off the table.
+   * Only transform and opacity animate: both stay on the compositor, a box-shadow transition repaints every frame.
+   */
+  /* Filled: an outer box-shadow isn't drawn under its own box, which shows as a hole once it's translated */
+  background: var(--card-lifted-shadow);
+  box-shadow: 0 2px 2px var(--card-lifted-shadow);
   opacity: 0;
-  transition: opacity 120ms;
+  /* Release: the shadow settles while the card flies home, and only fades once it's down */
+  transition: transform var(--move-ms) var(--ease), opacity 120ms var(--move-ms);
   pointer-events: none;
 }
-.card.dragging { transition: none; cursor: grabbing; }
-.card.dragging::before { opacity: 1; }
+.card.dragging { transition: none; }
+.board.grabbing, .board.grabbing .card { cursor: grabbing; }
+.card.dragging::before {
+  opacity: 1;
+  transform: translateY(18px);
+  /* Lift: fade in and drop together */
+  transition: transform 160ms var(--ease), opacity 120ms;
+}
 .board.no-anim .card { transition: none; }
 .board.dealing .card { transition-duration: var(--deal-ms); }
 
@@ -215,6 +234,21 @@ body {
 .btn:hover { filter: brightness(1.05); }
 .btn:active { transform: scale(0.96); }
 
+/* Autocascade offer, centred on a point over the foundation */
+.cascade {
+  position: absolute;
+  z-index: 950;
+  font-size: clamp(11px, calc(var(--cw) * 0.15), 18px);
+  padding: 0.45em 0.9em;
+  box-shadow: 0 4px 12px var(--card-lifted-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.85);
+  transition: opacity 150ms, transform 150ms var(--ease), filter 120ms;
+}
+.cascade.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+.cascade.show:active { transform: translate(-50%, -50%) scale(0.96); }
+
 /* Win overlay */
 .win {
   position: absolute;
@@ -255,6 +289,7 @@ body {
   border-radius: 0;
   border-image: var(--skin-button) var(--skin-button-slice) fill / calc(var(--skin-button-slice) * 1px / 3) stretch;
 }
+.board[data-skin-button] .cascade { box-shadow: none; }
 .board[data-skin-panel] .win .panel {
   background: none;
   border: calc(var(--skin-panel-slice) * 1px / 3) solid transparent;
@@ -262,7 +297,8 @@ body {
   border-image: var(--skin-panel) var(--skin-panel-slice) fill / calc(var(--skin-panel-slice) * 1px / 3) stretch;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card, .board.dealing .card { transition-duration: 0ms; }
-  .card.celebrate .face, .card.nope .face { animation: none; }
-}
+/* Set from the motion setting (?motion=system|full|reduced), which defaults to the OS preference */
+.board[data-motion="reduced"] .card,
+.board[data-motion="reduced"] .card::before { transition-duration: 0ms; }
+.board[data-motion="reduced"] .card.celebrate .face,
+.board[data-motion="reduced"] .card.nope .face { animation: none; }

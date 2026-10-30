@@ -1,4 +1,4 @@
 {
   "default": "classic",
-  "skins": ["classic"]
+  "skins": ["classic", "classic-altered"]
 }
