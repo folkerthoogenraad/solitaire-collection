@@ -19,6 +19,8 @@ export interface SkinManifest {
   name?: string;
   extends?: string;
   colors?: Record<string, string>;
+  /** `scale`: size of card/shape.png and the layers that follow it, relative to the card. */
+  card?: { scale?: number };
   center?: { box?: Box; narrowBox?: Box };
   pips?: {
     size?: number;
@@ -39,6 +41,7 @@ export interface SkinRegistry {
 /** A skin's manifest merged down its chain, with every field filled in. */
 export interface SkinSettings {
   colors: Record<string, string>;
+  card: { scale: number };
   center: { box: Box; narrowBox: Box };
   pips: { size: number; flip: 'auto' | 'none'; narrow: 'single' | 'layout'; layouts: Record<string, PipPoint[]> };
   table: { felt: 'cover' | 'tile' };
@@ -47,6 +50,7 @@ export interface SkinSettings {
 
 export const DEFAULT_SETTINGS: SkinSettings = {
   colors: {},
+  card: { scale: 1 },
   center: {
     box: { x: 0.22, y: 0.12, w: 0.56, h: 0.76 },
     narrowBox: { x: 0.08, y: 0.28, w: 0.84, h: 0.64 },
@@ -61,6 +65,7 @@ export function mergeSettings(rootFirst: readonly SkinManifest[]): SkinSettings 
   const s = structuredClone(DEFAULT_SETTINGS);
   for (const m of rootFirst) {
     Object.assign(s.colors, m.colors);
+    Object.assign(s.card, m.card);
     Object.assign(s.center, m.center);
     const { layouts, ...pips } = m.pips ?? {};
     Object.assign(s.pips, pips);
@@ -134,6 +139,7 @@ const manifest = shape<SkinManifest>({
   name: str,
   extends: str,
   colors: record(str),
+  card: shape({ scale: num }),
   center: shape({ box, narrowBox: box }),
   pips: shape({
     size: num,

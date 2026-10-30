@@ -45,7 +45,7 @@ function pips(cls: string, points: readonly Pip[], pip: Asset, images: ReadonlyM
   return el;
 }
 
-/** Card faces built from a resolved skin: corner index, centre art or pips, optional background. */
+/** Card faces built from a resolved skin: corner index, centre art or pips, optional background and outline. */
 export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: ReadonlyMap<string, LoadedImage>): CardFaceRenderer {
   return {
     render(card, deck) {
@@ -62,6 +62,7 @@ export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: Readonly
         face.classList.add('has-bg');
         face.append(glyph('bg', spec.background, images, ''));
       }
+      if (spec.outline.ink || spec.outline.paint) face.append(glyph('outline', spec.outline, images, ''));
 
       const center = document.createElement('div');
       center.className = 'center';

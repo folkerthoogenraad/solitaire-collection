@@ -156,7 +156,8 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
       return;
     }
     // The surface holds pointer capture, so the cursor has to be set there rather than on the card.
-    surface.classList.add('grabbing');
+    // Not for touch: there's no cursor, and the class restyles every card, which re-rasters them all on Android.
+    if (e.pointerType !== 'touch') surface.classList.add('grabbing');
     session = {
       pointerId: e.pointerId,
       from,

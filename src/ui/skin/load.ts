@@ -31,6 +31,7 @@ function apply(board: HTMLElement, id: string | null, settings: SkinSettings, ch
   setBox(root, 'center', settings.center.box);
   setBox(root, 'center-n', settings.center.narrowBox);
   root.setProperty('--pip-size', String(settings.pips.size));
+  root.setProperty('--card-scale', String(settings.card.scale));
   root.setProperty('--skin-button-slice', String(settings.ui.button.slice));
   root.setProperty('--skin-panel-slice', String(settings.ui.panel.slice));
 
@@ -83,7 +84,7 @@ export async function loadSkin(deck: DeckDefinition, board: HTMLElement, request
 
   const paths = new Set<string>(Object.values(chromePaths).filter((p) => p !== undefined));
   for (const spec of specs.values()) {
-    const assets = [spec.rank, spec.suit, spec.background, spec.center.kind === 'art' ? spec.center.art : spec.center.pip];
+    const assets = [spec.rank, spec.suit, spec.background, spec.outline, spec.center.kind === 'art' ? spec.center.art : spec.center.pip];
     for (const a of assets) for (const p of [a.ink, a.paint]) if (p) paths.add(p);
   }
 

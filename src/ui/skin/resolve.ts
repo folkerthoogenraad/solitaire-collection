@@ -34,9 +34,13 @@ export interface FaceSpec {
   suit: Asset;
   center: CenterSpec;
   background: Asset;
+  /** Drawn over the background and under the content; ink is tinted with `--card-border`. */
+  outline: Asset;
 }
 
 export interface ChromeSpec {
+  /** Alpha mask for the card body, from either layer. */
+  shape?: string;
   felt?: string;
   slot?: string;
   slotStock?: string;
@@ -150,12 +154,15 @@ export function resolveFace(chain: readonly SkinSource[], settings: SkinSettings
     suit,
     center: center ?? { kind: 'pips', pip, points: [singlePip(settings)] },
     background: lookup(chain, `card/background-${s}`, `card/background`),
+    outline: lookup(chain, `card/outline-${s}`, `card/outline`),
   };
 }
 
 export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
   const paint = (key: string) => lookup(chain, key).paint;
+  const shape = lookup(chain, 'card/shape');
   return {
+    shape: shape.ink ?? shape.paint,
     felt: paint('table/felt'),
     slot: paint('table/slot'),
     slotStock: paint('table/slot-stock'),
@@ -168,8 +175,8 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
 export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
   const ranks = deck.ranks.map((r) => r.label);
   const suits = deck.suits.map((s) => s.name);
-  const card = new Set<string>(['card/background']);
-  for (const s of suits) card.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`);
+  const card = new Set<string>(['card/background', 'card/outline', 'card/shape']);
+  for (const s of suits) card.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
   for (const r of ranks) {
     card.add(`index/${r}`).add(`center/${r}`);
     for (const s of suits) card.add(`index/${r}-${s}`).add(`center/${r}-${s}`);

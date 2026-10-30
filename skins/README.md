@@ -97,8 +97,19 @@ The suit symbols placed by a pip layout, and the single large pip.
 
 | File | Draw at | Notes |
 |---|---|---|
-| `card/background.png` | 360 × 504 px | Card blank. Corners get rounded for you, so fill the whole rectangle |
+| `card/background.png` | 360 × 504 px (× `card.scale` with a shape) | Card blank. Corners get rounded (or cut to the shape) for you, so fill the whole rectangle |
 | `card/background-{suit}.png` | 360 × 504 px | Optional: one suit only |
+| `card/shape.png` | 360 × 504 px × `card.scale` | Optional: the card's outline shape, replacing the rounded corners. Only the alpha is used |
+| `card/outline.ink.png` | same as the shape, or 360 × 504 px without one | Optional: drawn over the background. Ink is tinted with `card-border`; `outline.png` is shown as drawn |
+| `card/outline-{suit}.png` | same | Optional: one suit only |
+
+#### Shaped cards
+
+Without `card/shape.png`, a card is a rounded rectangle in `card-bg` with a thin `card-border` line and a small shadow.
+
+With it, the shape is used instead, for everything that's drawn as "the card": the `card-bg` fill, `card/background`, the lighter fill when a card is hinted, and the shadow under a dragged card. The CSS border line and the small resting shadow are switched off, because they can only follow a rectangle. Draw your own edge in `card/outline` instead. A painted `outline.png` can also carry a soft shadow just outside the shape.
+
+A hand-drawn edge eats into the card: if the wobbles have to stay inside 360 × 504, the card looks smaller than the others. Set `"card": { "scale": 1.1 }` in `skin.json` to let the shape, background and outline reach past the card on every side (here 5% each way). The rank, pips and art stay exactly where they were, and so does the area you can grab. Draw these three images at the larger size (360 × 504 × 1.1 = 396 × 554 px) with the normal card centred in it. Keep the scale small: the extra reaches over neighbouring cards and gaps on the table, and over the top strip of the card above in a fanned column.
 
 ### Table and buttons
 
@@ -125,6 +136,9 @@ Everything is optional. Anything you leave out comes from the skin you extend. H
     "card-bg": "#f2ead8",
     "felt-center": "#6b8563"
   },
+
+  // Size of card/shape.png (and the background and outline with it) relative to the card. Only used with a shape
+  "card": { "scale": 1.1 },
 
   // Where centre art and pips go: 0..1 of the card's width (x, w) and height (y, h)
   "center": {

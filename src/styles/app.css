@@ -94,6 +94,7 @@ body {
   pointer-events: none;
 }
 .card.dragging { transition: none; }
+/* Mouse only: toggling this restyles every card, which re-rasters the whole table on Android (docs/plans/mobile-animation-jank) */
 .board.grabbing, .board.grabbing .card { cursor: grabbing; }
 .card.dragging::before {
   opacity: 1;
@@ -138,6 +139,10 @@ body {
 .g.bg { position: absolute; inset: 0; height: auto; aspect-ratio: auto; }
 .g.bg::before { mask-size: 100% 100%; }
 .g.bg::after { background-size: 100% 100%; }
+/* Card outline image: like the background, but over it and tinted with the border colour */
+.g.outline { position: absolute; inset: 0; height: auto; aspect-ratio: auto; z-index: 1; color: var(--card-border); }
+.g.outline::before { mask-size: 100% 100%; }
+.g.outline::after { background-size: 100% 100%; }
 .face.has-bg::after { content: ""; position: absolute; inset: 0; background: var(--card-hint-bg); opacity: 0; transition: opacity 120ms; }
 .card.hint .face.has-bg::after { opacity: 0.5; }
 .face > .center, .face > .idx { z-index: 1; }
@@ -282,6 +287,35 @@ body {
 .board[data-skin-slot] .slot { border: 0; background: var(--skin-slot) center / 100% 100% no-repeat; }
 .board[data-skin-slot-stock] .slot[data-label] { border: 0; background: var(--skin-slot-stock) center / 100% 100% no-repeat; }
 .board[data-skin-slot-stock] .slot[data-label]::after { content: none; }
+
+/*
+ * Shaped cards (card/shape.png): the shape replaces the rounded corners for the body, background, hint overlay and
+ * lift shadow, and those reach past the card's box by --card-scale. Content and hit box stay on the box.
+ * No CSS border or resting shadow: a shaped skin draws those in card/outline.
+ */
+.board[data-skin-shape] .card {
+  --bleed: calc((var(--card-scale, 1) - 1) / 2);
+  --body-inset: calc(var(--cw) * 1.4 * var(--bleed) * -1) calc(var(--cw) * var(--bleed) * -1);
+}
+.board[data-skin-shape] .face,
+.board[data-skin-shape] .card.hint .face {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.board[data-skin-shape] .face::before { content: ""; position: absolute; background: var(--card-bg); transition: background-color 120ms; }
+.board[data-skin-shape] .card.hint .face::before { background: var(--card-hint-bg); }
+.board[data-skin-shape] .card::before,
+.board[data-skin-shape] .face::before,
+.board[data-skin-shape] .face.has-bg::after,
+.board[data-skin-shape] .g.bg,
+.board[data-skin-shape] .g.outline { inset: var(--body-inset); border-radius: 0; }
+.board[data-skin-shape] .card::before,
+.board[data-skin-shape] .face::before,
+.board[data-skin-shape] .face.has-bg::after,
+.board[data-skin-shape] .g.bg { mask: var(--skin-shape) center / 100% 100% no-repeat; }
 /* 9-slice: images are drawn at 3×, so a slice of N source px is N/3 CSS px */
 .board[data-skin-button] .btn {
   background: none;
