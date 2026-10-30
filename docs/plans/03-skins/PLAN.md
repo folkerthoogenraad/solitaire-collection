@@ -2,13 +2,13 @@
 
 Hand-drawn skins: PNG (or SVG/WebP) assets that replace card faces and table chrome. There can be several skins, and every skin falls back to another for anything it doesn't draw. The current glyph look is exported as the first skin, `classic`, which becomes both the default and the base of every other skin.
 
-Authoring guide (draft, moves to `skins/README.md` during implementation): [`README.md`](README.md).
+Authoring guide: [`skins/README.md`](../../../skins/README.md). Status: implemented; deviations from the original plan are listed in §9.
 
 ## 1. Assumptions
 
 Correct these if any are wrong.
 
-- **Filenames use rank labels and suit names**: `10-hearts.png`, not `TH.png`. Labels must be unique within a deck (asserted).
+- **Filenames use rank labels and suit names**: `10-hearts.png`, not `TH.png`. Labels must be unique within a deck.
 - **Skins are deck-agnostic.** Ranks and suits resolve by name, so a future deck with extra ranks gets the fallbacks automatically.
 - **The index (corner) position stays in CSS.** Only its glyphs are skinnable. Moving the index is out of scope, because compact fans depend on it.
 - **No card backs.** Every card is dealt face up, so `card/back.png` is reserved but not rendered.
@@ -27,7 +27,7 @@ skins/
     ...only the files you draw
 ```
 
-- **Discovery**: `import.meta.glob('/skins/*/**/*.{png,webp,svg}', { query: '?url' })` finds the asset files at build time. There's no hand-maintained file list and no 404 probing at runtime. The glob is lazy, so only the active skin chain's files get fetched. Manifests (`skin.json`, `skins.json`) are globbed eagerly, since they're tiny.
+- **Discovery**: `import.meta.glob('/skins/*/**/*.{png,webp,svg}', { query: '?url' })` finds the asset files at build time. There's no hand-maintained file list and no 404 probing at runtime. The glob is eager but only embeds URLs, so only the images the active skin chain uses get fetched. Skin images are excluded from Vite's asset inlining, so unused skins don't end up in the JS bundle.
 - **`skins.json`**: a registry isn't needed to *find* skins, since the glob does that. It's still useful for the default, the order in a picker, and keeping work-in-progress folders out of the game:
   ```json
   { "default": "classic", "skins": ["classic", "inkwell"] }
@@ -117,11 +117,11 @@ So a single-colour index glyph is `A.ink.png`, a full-colour court card is `K-he
 - **Glyph sizing**: CSS sets the height (the existing `0.21·cw` / `0.24·cw` compact sizes and so on). The width comes from `--ar`, the image's aspect ratio measured at preload. A wide `10` and a narrow `1` both fit without fixed boxes, so artists only care about height.
 - **Centre**: `.center` is positioned from `box` (or `narrowBox` when `data-mode="narrow"`, via two sets of CSS vars). Art fills it with `contain`. Pips are absolutely placed children. In narrow mode, a pip layout collapses to the single-pip fallback unless `pips.narrow` is `"layout"`. A 40px phone card with 10 pips would be unreadable.
 - **Card background image**: when one is present, the hint state can't swap `background-color`. It becomes a `::after` overlay using `--card-hint-bg` at partial opacity, and the ring is unchanged. Corners are clipped by the existing `.face { overflow: hidden; border-radius }`.
-- **Preload before the first paint**: resolve all 56 face specs, then `img.decode()` every URL the chain actually uses (≈40–80 small images) before the first deal. A skin never pops in mid-animation. If loading fails, fall back to `classic`, and if that fails too, to the CSS-only look.
-- **Switching skins at runtime**: a new `Renderer.setFaces(faces)` replaces each card element's `.face` child in place. Card elements, positions and transforms are untouched, so no relayout or animation glitch.
+- **Preload before the first paint**: resolve all 56 face specs, then `img.decode()` every URL the chain actually uses (≈40–80 small images) before the first deal. A skin never pops in mid-animation. If a skin fails to resolve, fall back to the default, then `classic`. Any image that is missing or fails to load shows its rank label or suit glyph as text instead.
+- **Switching skins at runtime**: not built (see §9). The skin is chosen once at startup.
 - **Table/UI**: skin colours and asset URLs are set as custom properties on `:root` (`--skin-felt`, `--skin-slot`, …). [app.css](../../../src/styles/app.css) uses them under `[data-skin]` selectors: felt background, slot images (`slot`, `slot-stock`), and `border-image` for the button and win panel.
 
-Code lives in `src/ui/skin/`: `manifest.ts` (types + validation), `resolve.ts` (pure chain resolution, tested), `load.ts` (glob, preload, apply vars) and `faces.ts` (the renderer).
+Code lives in `src/ui/skin/`: `manifest.ts` (types + validation), `resolve.ts` (pure chain resolution, tested), `catalog.ts` (globs), `load.ts` (selection, preload, apply vars) and `faces.ts` (the renderer).
 
 ## 6. Exporting classic
 
@@ -149,3 +149,17 @@ The goal is that today's look is reproduced through the new pipeline, giving you
 ## 8. Open questions
 
 - **Index placement per skin** (§1) is deliberately left out. Say so if hand-drawn skins need it, for example a different corner inset.
+
+## 9. As built
+
+Deviations from the plan above, and things added along the way:
+
+- **Export runs headless** instead of through the File System Access API: `npm run export:classic` loads [`tools/export-classic.html`](../../../tools/export-classic.html) in headless Edge/Chrome (whatever is installed; `CHROME_PATH` overrides) and writes the PNGs. No new dependency, no folder picker. It rewrites `classic/{index,pips,center}` and `_templates/`, never `skin.json`.
+- **Glyph images keep the CSS line box**: each index image is exactly one font-size tall (line-height 1) and one advance wide, so it slots into the old CSS sizes 1:1. Glyphs that overflowed the line box in the DOM (the tail of Q) are nudged inside. Court art is drawn into a centre-box-sized canvas at the position the old DOM had it, so `contain` reproduces it exactly.
+- **Classic also has `pips/{suit}.ink.png`** at 192 px: the single big pip is 0.5·cw, and the 72 px index suit would be blurry at that size.
+- **The single big pip has a fixed size** (0.5·cw, as before), independent of `pips.size`. Changing the pip size for layouts doesn't resize aces.
+- **Default `narrowBox` is `{ x: 0.08, y: 0.28, w: 0.84, h: 0.64 }`**, so narrow court art lands at the old size and position.
+- **Classic layouts use `pips.size: 0.17` and columns at 0.28 / 0.72** to keep the left column clear of a wide "10" index.
+- **`Renderer.setFaces` was not built.** Without a picker nothing would call it; it's a small addition when the picker comes.
+- **Dev gallery**: [`tools/gallery.html`](../../../tools/gallery.html)`?skin=<id>` shows all 56 faces at desktop and phone size, for checking a skin while drawing it.
+- **Parity check**: old and new builds were screenshotted side by side (desktop 1366×650, phone 390×760). They match apart from sub-pixel glyph differences. Table/UI images, ink+paint stacking, per-suit index art, colour overrides and the 9-slice button were checked with a throwaway test skin.

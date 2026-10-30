@@ -3,16 +3,23 @@ import './styles/app.css';
 import { randomSeed } from './core/rng';
 import { applyMove, foundationId, type GameState, type Move } from './core/state';
 import { bbb } from './core/variants/bbb';
+import { loadSettings, saveSettings } from './persistence/settings';
 import { load, save, type Stats } from './persistence/storage';
 import { createControls } from './ui/controls';
 import { attachDrag } from './ui/drag';
-import { generatedFaces } from './ui/faces';
 import { computeLayout } from './ui/layout';
 import { Renderer } from './ui/renderer';
+import { loadSkin } from './ui/skin/load';
 import { createWinOverlay } from './ui/win';
 
 const variant = bbb;
 const board = document.getElementById('board')!;
+
+// ?skin=<id> picks a skin and remembers it.
+const settings = loadSettings();
+const requested = new URLSearchParams(location.search).get('skin') ?? settings.skin;
+const skin = await loadSkin(variant.deck, board, requested);
+if (skin.id && skin.id !== settings.skin && skin.id === requested) saveSettings({ ...settings, skin: skin.id });
 
 const loaded = load(variant);
 let state: GameState = loaded.game ?? variant.deal(randomSeed());
@@ -20,7 +27,7 @@ let stats: Stats = loaded.stats;
 
 const controls = createControls(newDeal, () => state.started && !state.won);
 const win = createWinOverlay(newDeal);
-const renderer = new Renderer(board, variant, generatedFaces, controls.el);
+const renderer = new Renderer(board, variant, skin.faces, controls.el);
 board.append(win.el);
 controls.setWins(stats.wins);
 

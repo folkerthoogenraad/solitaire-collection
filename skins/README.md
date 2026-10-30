@@ -10,9 +10,11 @@ A skin is a folder of images plus a `skin.json`. You only draw what you want to 
    ```
 2. Add `"<your-skin>"` to the `skins` list in `skins/skins.json`.
 3. Drop images into the folder (see below).
-4. Run `npm run dev` and open `http://localhost:5173/?skin=<your-skin>`.
+4. Run `npm run dev` and open:
+   - `http://localhost:5173/tools/gallery.html?skin=<your-skin>` to see every card at desktop and phone size;
+   - `http://localhost:5173/?skin=<your-skin>` to play with it. The game remembers the last skin you picked this way.
 
-The browser console lists any file the game doesn't recognise, which usually means a typo in the name.
+The browser console lists any file the game doesn't recognise (usually a typo in the name) and any mistake in `skin.json`. `npm test` checks every skin listed in `skins.json` too.
 
 ## Names
 
@@ -31,11 +33,11 @@ Every card image can be saved in two ways, and you can use both at once:
 | `name.ink.png` | Only the shape is used. It's filled with the suit colour from `skin.json`, so draw it in any single colour on a transparent background. |
 | `name.png` | Shown exactly as drawn, in full colour. |
 
-If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail.
+If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail. Table and button images are always shown as drawn.
 
 ## All files
 
-Sizes are what to draw at. Images are scaled down to fit, and only the height is fixed: the width can be whatever the shape needs.
+Sizes are what to draw at (3× the largest card on screen). Images are scaled to fit, and only the height is fixed: the width can be whatever the shape needs.
 
 ### Corner index
 
@@ -47,6 +49,8 @@ The small rank and suit in the corner. In a tightly fanned column, this is all y
 | `index/{rank}-{suit}.png` | 96 px tall | Optional: one suit only, e.g. `index/Q-hearts.png` |
 | `index/{suit}.ink.png` | 72 px tall | e.g. `index/clubs.ink.png` |
 
+The image's full height fills the slot, so leave the same empty space above and below every glyph (as `classic` does) to keep them lined up.
+
 ### Centre of the card
 
 For each card, the game uses the **first** thing it finds:
@@ -56,7 +60,9 @@ For each card, the game uses the **first** thing it finds:
 3. A pip layout from `skin.json` (see below)
 4. One large suit pip
 
-Draw centre art at **202 × 383 px** (the default centre box). Change the box in `skin.json` if you want art to cover more of the card.
+This goes through your skin first, then the skin you extend. So your own pip layout for 7 wins over a `center/7-clubs.png` in `classic`.
+
+Draw centre art at **202 × 383 px** (the default centre box). It's scaled to fit the box, centred. Change the box in `skin.json` if you want art to cover more of the card.
 
 Every card you can give its own art:
 
@@ -81,11 +87,11 @@ Add `.png` or `.ink.png` to each name.
 
 ### Pips
 
-The small suit symbols placed by a pip layout.
+The suit symbols placed by a pip layout, and the single large pip.
 
 | File | Draw at | Notes |
 |---|---|---|
-| `pips/{suit}.ink.png` | 128 px tall | If missing, the corner index suit is used |
+| `pips/{suit}.ink.png` | 192 px tall | If missing, the corner index suit is used |
 
 ### Card
 
@@ -100,47 +106,46 @@ The small suit symbols placed by a pip layout.
 |---|---|---|
 | `table/felt.png` | ≥ 1920 × 1080, or a tile | Set `"felt": "tile"` in `skin.json` for a repeating tile |
 | `table/slot.png` | 360 × 504 px | Empty pile |
-| `table/slot-stock.png` | 360 × 504 px | Empty stock pile |
-| `ui/button.png` | any | Stretched around the text: corners stay, edges stretch (set `slice`) |
-| `ui/panel.png` | any | The "You won" panel, stretched the same way |
+| `table/slot-stock.png` | 360 × 504 px | Empty stock pile. Replaces the "Stock" label, so draw your own |
+| `ui/button.png` | any, at 3× | Stretched around the text: corners stay, edges stretch (set `slice`) |
+| `ui/panel.png` | any, at 3× | The "You won" panel, stretched the same way |
 
 ## skin.json
 
-Everything is optional. Anything you leave out comes from the skin you extend.
+Everything is optional. Anything you leave out comes from the skin you extend. Here's every setting, with what each does (the real file is plain JSON, so leave out the `//` comments):
 
 ```jsonc
 {
   "name": "My skin",
   "extends": "classic",
 
-  // Any colour from theme.css, without the leading --
+  // Any colour from src/styles/theme.css, without the leading --
   "colors": {
     "suit-hearts": "#a33",
     "card-bg": "#f2ead8",
     "felt-center": "#6b8563"
   },
 
-  // Where centre art and pips go. 0..1 of the card's width and height.
+  // Where centre art and pips go: 0..1 of the card's width (x, w) and height (y, h)
   "center": {
     "box": { "x": 0.22, "y": 0.12, "w": 0.56, "h": 0.76 },
-    "narrowBox": { "x": 0.08, "y": 0.26, "w": 0.84, "h": 0.70 }   // on phones
+    "narrowBox": { "x": 0.08, "y": 0.28, "w": 0.84, "h": 0.64 }   // on phones
   },
 
   "pips": {
-    "size": 0.2,          // pip height, as a fraction of card width
+    "size": 0.17,         // pip height, as a fraction of card width
     "flip": "auto",       // pips in the bottom half are upside down; "none" to turn that off
     "narrow": "single",   // on phones: one big pip ("single") or the full layout ("layout")
     "layouts": {
-      "2": [[0.5, 0], [0.5, 1]],
-      "3": [[0.5, 0], [0.5, 0.5], [0.5, 1]],
-      "7": [[0, 0], [1, 0], [0.5, 0.25], [0, 0.5], [1, 0.5], [0, 1], [1, 1]],
-      "A": [[0.5, 0.5, { "scale": 2.5 }]]
+      "2": [[0.5, 0.05], [0.5, 0.95]],
+      "3": [[0.5, 0.05], [0.5, 0.5], [0.5, 0.95]],
+      "A": [[0.5, 0.5, { "scale": 3 }]]
     }
   },
 
   "table": { "felt": "cover" },   // "cover" or "tile"
   "ui": {
-    "button": { "slice": 12 },    // px from each edge that must not stretch
+    "button": { "slice": 12 },    // source px from each edge that must not stretch
     "panel": { "slice": 24 }
   }
 }
@@ -152,12 +157,12 @@ Each point is `[x, y]`: the centre of one pip inside the centre box. `[0, 0]` is
 
 Add a third element to change one pip: `{ "flip": false }` keeps it upright, and `{ "scale": 2 }` makes it twice as large.
 
-Layouts are per rank. Defining only `"7"` keeps every other rank as it is in the skin you extend.
+Layouts are per rank. Defining only `"7"` keeps every other rank as it is in the skin you extend. `classic` has the standard layouts for 2–10; see `skins/classic/skin.json`.
 
 On phones, layouts are replaced by one big pip unless `"narrow": "layout"` is set, because ten pips on a 40 px card are unreadable.
 
 ## Tips
 
-- **Start from `classic`.** Open `skins/classic/` to see every file in use, and copy what you want to change.
-- **Templates**: `skins/_templates/` has blank images at the right sizes, with guides for the rounded corners, the corner index and the strip that stays visible in a tight fan.
-- **Check the phone layout too.** Open dev tools, switch to a phone viewport, and look at a long column: only the top strip of each card shows there.
+- **Start from `classic`.** Open `skins/classic/` to see every file in use, and copy what you want to change. Its images are generated from the original text-based faces by `npm run export:classic`, which overwrites them, so put your drawings in your own skin. Its `skin.json` is hand-written.
+- **Templates**: `skins/_templates/` has blank images at the right sizes. `card.png` has guides for the rounded corners, the corner index, the strip that stays visible in a tight fan, and the centre box on desktop and on phones. Put them on a layer under your drawing and hide that layer before saving.
+- **Check the phone layout too.** The gallery shows both sizes. In the game, use a phone viewport in dev tools and look at a long column: only the top strip of each card shows there.

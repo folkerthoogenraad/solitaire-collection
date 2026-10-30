@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skin gallery</title>
+  <style>
+    html, body { overflow: auto; height: auto; }
+    body .board { position: static; padding: 16px; }
+    .board h2 { margin: 0 0 8px; font: 600 14px system-ui, sans-serif; color: var(--text-muted); }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .board .card { position: relative; transform: none; cursor: default; }
+    header { display: flex; align-items: center; gap: 12px; padding: 16px 16px 0; font: 14px system-ui, sans-serif; }
+    header select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 0; background: var(--btn-bg); color: var(--btn-text); }
+    header a { color: var(--text); }
+  </style>
+</head>
+<body>
+  <!-- Dev-only: every card face of a skin, at desktop and phone size. Open /tools/gallery.html?skin=<id> -->
+  <header>
+    <label>Skin <select id="skin"></select></label>
+    <a id="play">Play with this skin</a>
+  </header>
+  <div class="board" data-mode="wide" style="--cw: 120px"><h2>Desktop</h2></div>
+  <div class="board" data-mode="narrow" style="--cw: 56px"><h2>Phone</h2></div>
+  <script type="module" src="./gallery.ts"></script>
+</body>
+</html>

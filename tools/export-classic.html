@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Export classic skin</title>
+</head>
+<body>
+<!--
+  Draws the original text-based card faces to PNGs, plus the drawing templates.
+  Run through `npm run export:classic`, which loads this page in a headless browser and writes the files.
+  Sizes match src/styles/app.css at 3× the largest card (120 px wide).
+-->
+<script type="module">
+  const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  const W = 360;
+  const H = 504;
+  const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'E'];
+  const SUITS = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+  const COURTS = ['J', 'Q', 'K', 'E'];
+  // Must match DEFAULT_SETTINGS in src/ui/skin/manifest.ts
+  const BOX = { x: 0.22, y: 0.12, w: 0.56, h: 0.76 };
+  const NARROW_BOX = { x: 0.08, y: 0.28, w: 0.84, h: 0.64 };
+
+  const files = {};
+  const warnings = [];
+
+  function canvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(w);
+    c.height = Math.ceil(h);
+    return [c, c.getContext('2d')];
+  }
+
+  function setFont(ctx, weight, size, spacing = 0) {
+    ctx.font = `${weight} ${size}px ${FONT}`;
+    ctx.letterSpacing = `${spacing}px`;
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  function measure(text, weight, size, spacing) {
+    const [, ctx] = canvas(1, 1);
+    setFont(ctx, weight, size, spacing);
+    return ctx.measureText(text);
+  }
+
+  /** Baseline of a glyph centred in a CSS line box of height `size` (line-height: 1). */
+  const baseline = (m, size) => (size + m.fontBoundingBoxAscent - m.fontBoundingBoxDescent) / 2;
+
+  function checkFit(path, m, top, bottom, base) {
+    if (base - m.actualBoundingBoxAscent < top - 0.5 || base + m.actualBoundingBoxDescent > bottom + 0.5) {
+      warnings.push(`${path}: glyph sticks out of its box and is clipped`);
+    }
+  }
+
+  /** One glyph exactly as the old DOM drew it: height = font size, width = advance. */
+  function glyph(path, text, weight, size, spacing = 0) {
+    const m = measure(text, weight, size, spacing);
+    const ink = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+    const [c, ctx] = canvas(Math.max(m.width, ink), size);
+    setFont(ctx, weight, size, spacing);
+    // The DOM let glyphs like Q's tail overflow the line box; an image can't, so nudge them inside.
+    let base = baseline(m, size);
+    base -= Math.max(0, base + m.actualBoundingBoxDescent - size);
+    base += Math.max(0, m.actualBoundingBoxAscent - base);
+    checkFit(path, m, 0, size, base);
+    ctx.fillText(text, ink > m.width ? m.actualBoundingBoxLeft : (c.width - m.width) / 2, base);
+    files[path] = c.toDataURL('image/png');
+  }
+
+  /** Court centre: large letter next to a suit glyph, centred on the card, drawn in the centre box. */
+  function court(path, rank, suit) {
+    const [c, ctx] = canvas(BOX.w * W, BOX.h * H);
+    const cx = W / 2 - BOX.x * W;
+    const cy = H / 2 - BOX.y * H;
+    const parts = [
+      { text: rank, weight: 800, size: 0.4 * W },
+      { text: suit, weight: 400, size: 0.28 * W },
+    ].map((p) => ({ ...p, m: measure(p.text, p.weight, p.size) }));
+    let x = cx - parts.reduce((sum, p) => sum + p.m.width, 0) / 2;
+    for (const p of parts) {
+      setFont(ctx, p.weight, p.size);
+      const base = cy - p.size / 2 + baseline(p.m, p.size);
+      checkFit(path, p.m, 0, c.height, base);
+      ctx.fillText(p.text, x, base);
+      x += p.m.width;
+    }
+    files[path] = c.toDataURL('image/png');
+  }
+
+  for (const r of RANKS) glyph(`classic/index/${r}.ink.png`, r, 700, 96, -0.05 * 96);
+  for (const [name, g] of Object.entries(SUITS)) {
+    glyph(`classic/index/${name}.ink.png`, g, 700, 72);
+    glyph(`classic/pips/${name}.ink.png`, g, 400, 192);
+    for (const r of COURTS) court(`classic/center/${r}-${name}.ink.png`, r, g);
+  }
+
+  // Templates: transparent images at the right size with guides. Draw on a layer above them.
+  function template(path, w, h, draw) {
+    const [c, ctx] = canvas(w, h);
+    ctx.font = `12px ${FONT}`;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgb(0 0 0 / 50%)';
+    ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
+    draw?.(ctx);
+    files[path] = c.toDataURL('image/png');
+  }
+
+  function rect(ctx, color, label, x, y, w, h, dashed = false) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.setLineDash(dashed ? [6, 4] : []);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    if (label) ctx.fillText(label, x + 4, y + 14);
+  }
+
+  const card = (ctx) => {
+    // Corners: radius is 8 px at the largest card size
+    ctx.strokeStyle = 'rgb(200 0 0 / 70%)';
+    ctx.beginPath();
+    ctx.roundRect(1, 1, W - 2, H - 2, 24);
+    ctx.stroke();
+  };
+
+  template('_templates/card.png', W, H, (ctx) => {
+    card(ctx);
+    // Tightly fanned column: only this strip of each card shows
+    ctx.fillStyle = 'rgb(255 140 0 / 20%)';
+    ctx.fillRect(0, 0, W, 0.12 * W);
+    ctx.fillStyle = 'rgb(255 140 0 / 90%)';
+    ctx.fillText('always visible (tightest fan)', 0.5 * W, 0.12 * W - 6);
+    ctx.fillRect(0, 0.43 * W, W, 1);
+    ctx.fillText('visible in a normal fan', 0.5 * W, 0.43 * W - 6);
+    rect(ctx, 'rgb(130 0 200 / 80%)', 'index', 0.07 * W, 0.05 * W, 0.2 * W, 0.375 * W);
+    rect(ctx, 'rgb(130 0 200 / 80%)', '', 0.07 * W, 0.05 * W, 0.45 * W, 0.24 * W, true);
+    ctx.fillText('index (fanned)', 0.3 * W, 0.29 * W - 6);
+    rect(ctx, 'rgb(0 90 220 / 80%)', 'centre box', BOX.x * W, BOX.y * H, BOX.w * W, BOX.h * H);
+    rect(ctx, 'rgb(0 150 60 / 80%)', '', NARROW_BOX.x * W, NARROW_BOX.y * H, NARROW_BOX.w * W, NARROW_BOX.h * H, true);
+    ctx.fillText('centre box on phones', NARROW_BOX.x * W + 4, (NARROW_BOX.y + NARROW_BOX.h) * H - 6);
+  });
+  template('_templates/slot.png', W, H, card);
+  template('_templates/center.png', BOX.w * W, BOX.h * H);
+  template('_templates/index-rank.png', 96, 96);
+  template('_templates/index-suit.png', 72, 72);
+  template('_templates/pip.png', 192, 192);
+
+  const out = document.createElement('pre');
+  out.id = 'out';
+  out.textContent = JSON.stringify({ files, warnings });
+  document.body.append(out);
+</script>
+</body>
+</html>

@@ -104,6 +104,25 @@ body {
 .face[data-suit="diamonds"] { color: var(--suit-diamonds); }
 .face[data-suit="clubs"] { color: var(--suit-clubs); }
 
+/*
+ * Skin glyph: one image slot. CSS sets the height (--h), the image's aspect ratio (--ar) sets the width.
+ * The ink layer is a mask filled with the suit colour; the paint layer is drawn as-is on top.
+ */
+.g { position: relative; display: block; flex: none; height: var(--h); aspect-ratio: var(--ar, 1); }
+.g.ink::before, .g.paint::after { content: ""; position: absolute; inset: 0; }
+.g.ink::before { background-color: currentColor; mask: var(--ink) center / contain no-repeat; }
+.g.paint::after { background: var(--paint) center / contain no-repeat; }
+/* Missing image: show the label instead */
+.g.text { height: auto; aspect-ratio: auto; font-size: var(--h); line-height: 1; text-align: center; }
+
+/* Card background image, stretched to the card (corners are clipped by .face) */
+.g.bg { position: absolute; inset: 0; height: auto; aspect-ratio: auto; }
+.g.bg::before { mask-size: 100% 100%; }
+.g.bg::after { background-size: 100% 100%; }
+.face.has-bg::after { content: ""; position: absolute; inset: 0; background: var(--card-hint-bg); opacity: 0; transition: opacity 120ms; }
+.card.hint .face.has-bg::after { opacity: 0.5; }
+.face > .center, .face > .idx { z-index: 1; }
+
 .idx {
   position: absolute;
   top: calc(var(--cw) * 0.05);
@@ -111,33 +130,42 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1;
   font-weight: 700;
 }
-.idx .r { font-size: calc(var(--cw) * 0.21); letter-spacing: -0.05em; }
-.idx .s { font-size: calc(var(--cw) * 0.165); }
+.idx .r { --h: calc(var(--cw) * 0.21); }
+.idx .r.text { letter-spacing: -0.05em; }
+.idx .s { --h: calc(var(--cw) * 0.165); }
 .idx.br { top: auto; left: auto; bottom: calc(var(--cw) * 0.05); right: calc(var(--cw) * 0.07); transform: rotate(180deg); }
 
 /* One-line index when the column is fanned tightly (always in narrow mode) */
 .card.compact .idx:not(.br) { flex-direction: row; gap: calc(var(--cw) * 0.02); }
-.card.compact .idx .r { font-size: calc(var(--cw) * 0.24); }
-.card.compact .idx .s { font-size: calc(var(--cw) * 0.19); }
+.card.compact .idx .r { --h: calc(var(--cw) * 0.24); }
+.card.compact .idx .s { --h: calc(var(--cw) * 0.19); }
 
-.pip {
+/* Centre art or pips, inside the skin's centre box */
+.center {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(var(--cw) * 0.5);
-  line-height: 1;
+  left: var(--center-x);
+  top: var(--center-y);
+  width: var(--center-w);
+  height: var(--center-h);
 }
-.court .pip .cr { font-size: calc(var(--cw) * 0.4); font-weight: 800; }
-.court .pip .cs { font-size: calc(var(--cw) * 0.28); }
+.center > .art { position: absolute; inset: 0; height: auto; aspect-ratio: auto; }
+.center > .art.text { display: grid; place-items: center; font-size: calc(var(--cw) * 0.4); font-weight: 800; }
+.pips { position: absolute; inset: 0; }
+.pip { position: absolute; --h: calc(var(--cw) * var(--pip-size) * var(--s, 1)); transform: translate(-50%, -50%); }
+.pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
+.pips.narrow-only { display: none; }
 
 .board[data-mode="narrow"] .idx.br { display: none; }
-.board[data-mode="narrow"] .pip { padding-top: calc(var(--cw) * 0.28); font-size: calc(var(--cw) * 0.46); }
-.board[data-mode="narrow"] .court .pip .cr { font-size: calc(var(--cw) * 0.34); }
+.board[data-mode="narrow"] .center {
+  left: var(--center-n-x);
+  top: var(--center-n-y);
+  width: var(--center-n-w);
+  height: var(--center-n-h);
+}
+.board[data-mode="narrow"] .center.collapse .pips.main { display: none; }
+.board[data-mode="narrow"] .center.collapse .pips.narrow-only { display: block; }
 
 .card.nope .face { animation: nope 240ms ease; }
 @keyframes nope {
@@ -213,6 +241,26 @@ body {
 .win.show .panel { transform: scale(1); }
 .win h2 { margin: 0 0 8px; font-size: 28px; }
 .win p { margin: 0 0 16px; }
+
+/* Skin table and UI images (attributes are set only when the skin has the image) */
+.board[data-felt] { background: var(--skin-felt) center / cover no-repeat, var(--felt-edge); }
+.board[data-felt="tile"] { background: var(--skin-felt) repeat, var(--felt-edge); }
+.board[data-skin-slot] .slot { border: 0; background: var(--skin-slot) center / 100% 100% no-repeat; }
+.board[data-skin-slot-stock] .slot[data-label] { border: 0; background: var(--skin-slot-stock) center / 100% 100% no-repeat; }
+.board[data-skin-slot-stock] .slot[data-label]::after { content: none; }
+/* 9-slice: images are drawn at 3×, so a slice of N source px is N/3 CSS px */
+.board[data-skin-button] .btn {
+  background: none;
+  border: calc(var(--skin-button-slice) * 1px / 3) solid transparent;
+  border-radius: 0;
+  border-image: var(--skin-button) var(--skin-button-slice) fill / calc(var(--skin-button-slice) * 1px / 3) stretch;
+}
+.board[data-skin-panel] .win .panel {
+  background: none;
+  border: calc(var(--skin-panel-slice) * 1px / 3) solid transparent;
+  border-radius: 0;
+  border-image: var(--skin-panel) var(--skin-panel-slice) fill / calc(var(--skin-panel-slice) * 1px / 3) stretch;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .card, .board.dealing .card { transition-duration: 0ms; }
