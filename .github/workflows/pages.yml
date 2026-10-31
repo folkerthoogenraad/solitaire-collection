@@ -1,5 +1,5 @@
 # Tests and builds every push and pull request; deploys main to GitHub Pages.
-# One-time repo setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# Repo setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 name: Pages
 
 on:
