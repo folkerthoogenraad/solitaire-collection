@@ -15,7 +15,7 @@ npm run export:classic  # regenerate skins/classic images and templates (needs E
 
 ## Deployment
 
-[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs the tests and build on every push and pull request, and deploys `main` to GitHub Pages (http://justf.net/web-solitaire/).
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs the tests and build on every push and pull request, and deploys `main` to GitHub Pages (http://justf.net/solitaire-collection/).
 
 ## Layout
 
