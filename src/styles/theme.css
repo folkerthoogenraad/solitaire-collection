@@ -29,6 +29,10 @@
   /* Empty slots, band divider and drop highlight */
   --slot-border: rgba(255, 255, 255, 0.35);
   --slot-label: rgb(255 255 255 / 24%);
+  /* Line between the two bands on phones */
+  --divider: var(--slot-border);
+  /* The variant's emblem next to the stock, where it's drawn as ink */
+  --emblem: var(--text-muted);
   --drop-highlight: #b3a77b;
 
   /* Win overlay */

@@ -47,6 +47,12 @@ export interface ChromeSpec {
   slotInk?: string;
   slotStock?: string;
   slotStockInk?: string;
+  /** The stock's label, over its slot images. Ink is tinted with `--slot-label`. */
+  stock?: string;
+  stockInk?: string;
+  /** Over the card or pile a dragged card will land on, instead of the glow. Ink is tinted with `--drop-highlight`. */
+  drop?: string;
+  dropInk?: string;
   button?: string;
   panel?: string;
 }
@@ -134,7 +140,8 @@ function toPip([x, y, opts]: PipPoint, settings: SkinSettings): Pip {
 export function resolveFace(chain: readonly SkinSource[], settings: SkinSettings, deck: DeckDefinition, card: Card): FaceSpec {
   const r = deck.ranks[card.rank]!.label;
   const s = deck.suits[card.suit]!.name;
-  const suit = lookup(chain, `index/${s}`);
+  // Each falls back to the other, so a skin can start with either one.
+  const suit = lookup(chain, `index/${s}`, `pips/${s}`);
   const pip = lookup(chain, `pips/${s}`, `index/${s}`);
 
   let center: CenterSpec | null = null;
@@ -166,6 +173,8 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
   const shape = lookup(chain, 'card/shape');
   const slot = lookup(chain, 'table/slot');
   const slotStock = lookup(chain, 'table/slot-stock');
+  const stock = lookup(chain, 'table/stock');
+  const drop = lookup(chain, 'card/drop');
   return {
     shape: shape.ink ?? shape.paint,
     felt: paint('table/felt'),
@@ -173,28 +182,52 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
     slotInk: slot.ink,
     slotStock: slotStock.paint,
     slotStockInk: slotStock.ink,
+    stock: stock.paint,
+    stockInk: stock.ink,
+    drop: drop.paint,
+    dropInk: drop.ink,
     button: paint('ui/button'),
     panel: paint('ui/panel'),
   };
+}
+
+/** Images the controls and the table show as elements: see `UiAssets`. */
+export type UiKey = 'emblem' | 'wins' | 'new-deal' | Digit;
+export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+export type UiAssets = Record<UiKey, Asset>;
+
+export const DIGITS: readonly Digit[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+/** The variant's emblem, the control labels, and the win counter's digits (corner index images, so 10 is 1 and 0). */
+export function resolveUi(chain: readonly SkinSource[], variantId: string): UiAssets {
+  const ui = {
+    emblem: lookup(chain, `emblem/${variantId}`),
+    wins: lookup(chain, 'ui/wins'),
+    'new-deal': lookup(chain, 'ui/new-deal'),
+  } as UiAssets;
+  for (const d of DIGITS) ui[d] = lookup(chain, `index/${d}`);
+  return ui;
 }
 
 /** Files in a skin that no lookup can ever reach: usually a typo in the name. */
 export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
   const ranks = deck.ranks.map((r) => r.label);
   const suits = deck.suits.map((s) => s.name);
-  const card = new Set<string>(['card/background', 'card/outline', 'card/shape', 'table/slot', 'table/slot-stock']);
-  for (const s of suits) card.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
+  const any = new Set<string>(['card/background', 'card/outline', 'card/shape', 'card/drop', 'table/slot', 'table/slot-stock', 'table/stock', 'ui/wins', 'ui/new-deal']);
+  for (const d of DIGITS) any.add(`index/${d}`);
+  for (const s of suits) any.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
   for (const r of ranks) {
-    card.add(`index/${r}`).add(`center/${r}`);
-    for (const s of suits) card.add(`index/${r}-${s}`).add(`center/${r}-${s}`);
+    any.add(`index/${r}`).add(`center/${r}`);
+    for (const s of suits) any.add(`index/${r}-${s}`).add(`center/${r}-${s}`);
   }
   const paintOnly = new Set(['table/felt', 'ui/button', 'ui/panel']);
 
   const out: string[] = [];
   for (const [key, asset] of skin.assets) {
-    if (card.has(key)) continue;
+    // Any variant's emblem: a skin can carry emblems for variants this build doesn't have.
+    if (any.has(key) || key.startsWith('emblem/')) continue;
     if (paintOnly.has(key) && !asset.ink) continue;
-    out.push(paintOnly.has(key) ? `${key}.ink (the felt and UI images can't be tinted)` : key);
+    out.push(paintOnly.has(key) ? `${key}.ink (the felt, button and panel can't be tinted)` : key);
   }
   return out;
 }

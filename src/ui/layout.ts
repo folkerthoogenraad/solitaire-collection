@@ -6,6 +6,8 @@ export const CARD_RATIO = 1.4;
 const MIN_FAN = 0.34;
 /** Largest card width (px) per mode; this is what caps the board width on big screens. */
 export const MAX_CARD_W = { wide: 150, narrow: 110 };
+/** Narrowest the controls get (× card width) before the emblem gives way. */
+const MIN_CONTROLS_W = 1.5;
 
 export interface Rect {
   x: number;
@@ -34,13 +36,15 @@ export interface Layout {
   /** Below this fan the card index switches to a single line. */
   compactFan: number;
   controls: Rect;
+  /** The variant's emblem, next to the stock; only when the skin has one. */
+  emblem?: Rect;
   dividers: Rect[];
 }
 
-/** Picks whichever arrangement gives clearly larger cards. */
-export function computeLayout(width: number, height: number, variant: Variant): Layout {
-  const wide = wideLayout(width, height, variant);
-  const narrow = narrowLayout(width, height, variant);
+/** Picks whichever arrangement gives clearly larger cards. `emblemAr`: width / height of the emblem, if there is one. */
+export function computeLayout(width: number, height: number, variant: Variant, emblemAr?: number): Layout {
+  const wide = wideLayout(width, height, variant, emblemAr);
+  const narrow = narrowLayout(width, height, variant, emblemAr);
   return narrow.cardW > wide.cardW * 1.35 ? narrow : wide;
 }
 
@@ -61,19 +65,32 @@ function topRow(
   scale: number,
   gap: number,
   slots: Record<PileId, Slot>,
-): Rect {
+  emblemAr: number | undefined,
+): { controls: Rect; emblem?: Rect } {
   const w = cw * scale;
+  const h = w * CARD_RATIO;
   const f = variant.foundationCount;
   slots[STOCK] = { x: left, y, scale };
   for (let i = 0; i < f; i++) {
     slots[foundationId(i)] = { x: right - (f - i) * w - (f - 1 - i) * gap, y, scale };
   }
-  // Controls fill the gap between the stock and the first foundation.
-  const x = left + w + gap;
-  return { x, y, w: slots[foundationId(0)]!.x - gap - x, h: w * CARD_RATIO };
+  // The emblem sits next to the stock, as tall as it unless that squeezes the controls, which fill the rest of
+  // the gap up to the first foundation.
+  let x = left + w + gap;
+  const end = slots[foundationId(0)]!.x - gap;
+  let emblem: Rect | undefined;
+  if (emblemAr) {
+    const ew = Math.min(h * emblemAr, end - x - gap - cw * MIN_CONTROLS_W);
+    if (ew > 0) {
+      const eh = ew / emblemAr;
+      emblem = { x, y: y + (h - eh) / 2, w: ew, h: eh };
+      x += ew + gap;
+    }
+  }
+  return { controls: { x, y, w: end - x, h }, emblem };
 }
 
-function wideLayout(width: number, height: number, variant: Variant): Layout {
+function wideLayout(width: number, height: number, variant: Variant, emblemAr: number | undefined): Layout {
   const n = variant.tableauCount;
   const pad = clamp(Math.min(width, height) * 0.035, 8, 40);
   const gapR = 0.14;
@@ -88,17 +105,17 @@ function wideLayout(width: number, height: number, variant: Variant): Layout {
 
   const slots: Record<PileId, Slot> = {};
   const bottom: Record<PileId, number> = {};
-  const controls = topRow(variant, left, left + total, pad, cw, 1, gap, slots);
+  const top = topRow(variant, left, left + total, pad, cw, 1, gap, slots, emblemAr);
 
   const y = pad + ch + cw * 0.3;
   for (let i = 0; i < n; i++) {
     slots[tableauId(i)] = { x: left + i * (cw + gap), y, scale: 1 };
     bottom[tableauId(i)] = height - pad;
   }
-  return { mode: 'wide', cardW: cw, cardH: ch, slots, bottom, fan: cw * 0.43, compactFan: cw * 0.43, controls, dividers: [] };
+  return { mode: 'wide', cardW: cw, cardH: ch, slots, bottom, fan: cw * 0.43, compactFan: cw * 0.43, ...top, dividers: [] };
 }
 
-function narrowLayout(width: number, height: number, variant: Variant): Layout {
+function narrowLayout(width: number, height: number, variant: Variant, emblemAr: number | undefined): Layout {
   const n = variant.tableauCount;
   const perBand = Math.ceil(n / 2);
   const pad = 8;
@@ -115,7 +132,7 @@ function narrowLayout(width: number, height: number, variant: Variant): Layout {
 
   const slots: Record<PileId, Slot> = {};
   const bottom: Record<PileId, number> = {};
-  const controls = topRow(variant, left, left + total, pad, cw, topScale, gap * 0.8, slots);
+  const top = topRow(variant, left, left + total, pad, cw, topScale, gap * 0.8, slots, emblemAr);
 
   const bandGap = cw * 0.25;
   const band1 = pad + ch * topScale + bandGap;
@@ -137,7 +154,7 @@ function narrowLayout(width: number, height: number, variant: Variant): Layout {
     bottom,
     fan: cw * 0.38,
     compactFan: Infinity,
-    controls,
+    ...top,
     dividers: [{ x: left, y: band2 - bandGap / 2, w: total, h: 1 }],
   };
 }

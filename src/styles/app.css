@@ -15,6 +15,8 @@ html, body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  /* Also outside the board: Safari may judge a double tap by the page, not the element under the finger */
+  touch-action: none;
 }
 
 body {
@@ -37,6 +39,9 @@ body {
   --radius: clamp(4px, calc(var(--cw) * 0.08), 8px);
 }
 
+/* Set by zoom.ts while the page is zoomed in anyway, so a pinch can zoom back out */
+html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; }
+
 .layer { position: relative; width: 100%; height: 100%; }
 
 .slot, .card, .drop-hl, .controls, .divider {
@@ -53,10 +58,12 @@ body {
   border: 2px dashed var(--slot-border);
   border-radius: var(--radius);
 }
-.slot::after {
-  content: attr(data-label);
+.slot::after { content: ""; position: absolute; inset: 0; }
+/* The stock's label: text, or the skin's table/stock images */
+.slot-label {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: grid;
   place-items: center;
   color: var(--slot-label);
@@ -65,7 +72,8 @@ body {
   letter-spacing: 0.08em;
 }
 
-.divider { height: 1px; background: var(--slot-border); opacity: 0.6; }
+
+.divider { height: 1px; background: var(--divider); opacity: 0.6; }
 
 /* Cards */
 .card {
@@ -128,7 +136,7 @@ body {
  * Skin glyph: one image slot. CSS sets the height (--h), the image's aspect ratio (--ar) sets the width.
  * The ink layer is a mask filled with the suit colour; the paint layer is drawn as-is on top.
  */
-.g { position: relative; display: block; flex: none; height: var(--h); aspect-ratio: var(--ar, 1); }
+.g { position: relative; display: block; flex: none; height: var(--h); aspect-ratio: var(--ar, 1); font-style: normal; }
 .g.ink::before, .g.paint::after { content: ""; position: absolute; inset: 0; }
 .g.ink::before { background-color: currentColor; mask: var(--ink) center / contain no-repeat; }
 .g.paint::after { background: var(--paint) center / contain no-repeat; }
@@ -174,6 +182,10 @@ body {
   width: var(--center-w);
   height: var(--center-h);
 }
+/* The variant's emblem, next to the stock (only when the skin has one); sized by the layout */
+.g.emblem { position: absolute; left: 0; top: 0; transform-origin: 0 0; color: var(--emblem); }
+.g.emblem[hidden] { display: none; }
+
 .center > .art { position: absolute; inset: 0; height: auto; aspect-ratio: auto; }
 .center > .art.text { display: grid; place-items: center; font-size: calc(var(--cw) * 0.4); font-weight: 800; }
 .pips { position: absolute; inset: 0; }
@@ -212,17 +224,23 @@ body {
 }
 .drop-hl.show { opacity: 1; }
 
-/* Win counter + New deal, between the stock and the foundations */
+/*
+ * Win counter above New deal, between the stock (or emblem) and the foundations. The grid's one column is as wide
+ * as the wider of the two, and both stretch to it. Labels and digits are one line (1em) tall, image or text.
+ */
 .controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--cw) * 0.2);
-  font-size: calc(var(--cw) * 0.17);
+  display: grid;
+  place-content: center;
+  gap: 0.3em;
+  font-size: calc(var(--cw) * 0.21);
 }
-.board[data-mode="narrow"] .controls { flex-direction: column; gap: calc(var(--cw) * 0.1); font-size: calc(var(--cw) * 0.2); }
-.wins { color: var(--text-muted); white-space: nowrap; }
-.wins b { color: var(--text); font-size: 1.35em; margin-left: 0.15em; }
+.board[data-mode="narrow"] .controls { font-size: calc(var(--cw) * 0.18); }
+.board[data-mode="narrow"] .controls .btn { padding: 0.3em 0.5em; }
+.wins, .btn.deal { display: flex; align-items: center; justify-content: center; }
+.wins { gap: 0.25em; color: var(--text-muted); white-space: nowrap; }
+.wins .count { display: flex; color: var(--text); }
+.wins .g, .btn > .g { --h: 1em; }
+.wins .digit.text { --h: 1.35em; font-weight: 700; }
 
 .btn {
   background: var(--btn-bg);
@@ -279,9 +297,12 @@ body {
 }
 .win.show .panel { transform: scale(1); }
 .win h2 { margin: 0 0 8px; font-size: 28px; }
-.win p { margin: 0 0 16px; }
+.win .wins { margin-bottom: 16px; font-size: 24px; color: inherit; }
+.win .wins .count { color: inherit; }
+.win .btn.deal { display: inline-flex; }
 
 /* Skin table and UI images (attributes are set only when the skin has the image) */
+.board[data-scaling="pixelated"] { image-rendering: pixelated; }
 .board[data-felt] { background: var(--skin-felt) center / cover no-repeat, var(--felt-edge); }
 .board[data-felt="tile"] { background: var(--skin-felt) 0 0 / calc(var(--cw) * var(--felt-tile)) auto repeat, var(--felt-edge); }
 /*
@@ -297,10 +318,38 @@ body {
 .board[data-skin-slot-ink] .slot { --slot-ink: var(--skin-slot-ink); }
 .board[data-skin-slot-ink] .slot::before { content: ""; }
 .board[data-skin-slot] .slot { --slot-paint: var(--skin-slot); }
-.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label] { border: 0; --slot-ink: var(--skin-slot-stock-ink); --slot-paint: var(--skin-slot-stock); }
-.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label]::before { content: none; }
-.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot[data-label]::after { content: ""; }
-.board[data-skin-slot-stock-ink] .slot[data-label]::before { content: ""; }
+/*
+ * Drop highlight (card/drop): over the card or empty pile a dragged card will land on, instead of the glow. Ink
+ * (tinted with the highlight colour) in ::before, paint in ::after, both reaching past the card by --drop-scale.
+ */
+.board:is([data-skin-drop], [data-skin-drop-ink]) .drop-hl { box-shadow: none; border-radius: 0; }
+.board:is([data-skin-drop], [data-skin-drop-ink]) .drop-hl::before,
+.board:is([data-skin-drop], [data-skin-drop-ink]) .drop-hl::after {
+  position: absolute;
+  inset: calc((var(--drop-scale, 1) - 1) / 2 * -100%);
+}
+.board[data-skin-drop-ink] .drop-hl::before { content: ""; background-color: var(--drop-highlight); mask: var(--skin-drop-ink) center / 100% 100% no-repeat; }
+.board[data-skin-drop] .drop-hl::after { content: ""; background: var(--skin-drop) center / 100% 100% no-repeat; }
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot.stock { border: 0; --slot-ink: var(--skin-slot-stock-ink); --slot-paint: var(--skin-slot-stock); }
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink]) .slot.stock::before { content: none; }
+.board[data-skin-slot-stock-ink] .slot.stock::before { content: ""; }
+/*
+ * The stock's label: table/stock images over its slot images, on the same canvas. Without them the text shows,
+ * unless the stock has its own slot images, which draw their label themselves.
+ */
+.board:is([data-skin-slot-stock], [data-skin-slot-stock-ink], [data-skin-stock], [data-skin-stock-ink]) .slot-label { color: transparent; }
+.board:is([data-skin-stock], [data-skin-stock-ink]) .slot-label::before,
+.board:is([data-skin-stock], [data-skin-stock-ink]) .slot-label::after { position: absolute; inset: 0; }
+/* At its own size (--skin-stock-w card widths), centred, never wider than the pile */
+.board[data-skin-stock-ink] .slot-label::before {
+  content: "";
+  background-color: var(--slot-label);
+  mask: var(--skin-stock-ink) center / min(100%, calc(var(--cw) * var(--skin-stock-ink-w))) auto no-repeat;
+}
+.board[data-skin-stock] .slot-label::after {
+  content: "";
+  background: var(--skin-stock) center / min(100%, calc(var(--cw) * var(--skin-stock-w))) auto no-repeat;
+}
 
 /*
  * Shaped cards (card/shape.png): the shape replaces the rounded corners for the body, background, hint overlay and
@@ -338,6 +387,11 @@ body {
   border-image: var(--skin-button) var(--skin-button-slice) fill / calc(var(--skin-button-slice) * 1px / 3) stretch;
 }
 .board[data-skin-button] .cascade { box-shadow: none; }
+/* The New deal button scales with the cards, like the rest of the controls: N source px at 3× the largest card (150 px) */
+.board[data-skin-button] .controls .btn {
+  border-width: calc(var(--skin-button-slice) * var(--cw) / (3 * 150));
+  border-image-width: calc(var(--skin-button-slice) * var(--cw) / (3 * 150));
+}
 .board[data-skin-panel] .win .panel {
   background: none;
   border: calc(var(--skin-panel-slice) * 1px / 3) solid transparent;

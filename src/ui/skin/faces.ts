@@ -1,5 +1,5 @@
 import type { CardFaceRenderer } from '../faces';
-import type { Asset, FaceSpec, Pip } from './resolve';
+import type { Asset, FaceSpec, Pip, UiAssets, UiKey } from './resolve';
 
 export interface LoadedImage {
   url: string;
@@ -13,7 +13,7 @@ export interface LoadedImage {
  * One image slot. Height comes from CSS (`--h`), width from the image's aspect ratio.
  * Without a loaded image it shows `text` instead, so a missing file never leaves a hole.
  */
-function glyph(cls: string, asset: Asset, images: ReadonlyMap<string, LoadedImage>, text: string): HTMLElement {
+export function glyph(cls: string, asset: Asset, images: ReadonlyMap<string, LoadedImage>, text: string): HTMLElement {
   const el = document.createElement('i');
   el.className = `g ${cls}`;
   const ink = asset.ink ? images.get(asset.ink) : undefined;
@@ -88,6 +88,24 @@ export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: Readonly
 
       face.append(center, index('idx'), index('idx br'));
       return face;
+    },
+  };
+}
+
+/** Skin images shown outside the cards: the variant's emblem, the control labels and the win counter's digits. */
+export interface SkinUi {
+  /** The skin's image for `key`, or `text` where it has none. */
+  glyph(cls: string, key: UiKey, text: string): HTMLElement;
+  /** Width / height of the skin's image for `key`, if it has one that loaded. */
+  ar(key: UiKey): number | undefined;
+}
+
+export function skinUi(assets: UiAssets, images: ReadonlyMap<string, LoadedImage>): SkinUi {
+  return {
+    glyph: (cls, key, text) => glyph(cls, assets[key], images, text),
+    ar(key) {
+      const { ink, paint } = assets[key];
+      return ((paint && images.get(paint)) || (ink && images.get(ink)) || undefined)?.ar;
     },
   };
 }

@@ -19,8 +19,13 @@ export interface SkinManifest {
   name?: string;
   extends?: string;
   colors?: Record<string, string>;
-  /** `scale`: size of card/shape.png and the layers that follow it, relative to the card. */
-  card?: { scale?: number };
+  /** How images are scaled: `pixelated` keeps hard pixel edges, for pixel art. */
+  scaling?: 'smooth' | 'pixelated';
+  /**
+   * `scale`: size of card/shape.png and the layers that follow it, relative to the card.
+   * `dropScale`: the same for card/drop.png; `scale` unless set.
+   */
+  card?: { scale?: number; dropScale?: number };
   center?: { box?: Box; narrowBox?: Box };
   pips?: {
     size?: number;
@@ -42,7 +47,8 @@ export interface SkinRegistry {
 /** A skin's manifest merged down its chain, with every field filled in. */
 export interface SkinSettings {
   colors: Record<string, string>;
-  card: { scale: number };
+  scaling: 'smooth' | 'pixelated';
+  card: { scale: number; dropScale?: number };
   center: { box: Box; narrowBox: Box };
   pips: { size: number; flip: 'auto' | 'none'; narrow: 'single' | 'layout'; layouts: Record<string, PipPoint[]> };
   table: { felt: 'cover' | 'tile'; tileSize?: number; slotScale: number };
@@ -51,6 +57,7 @@ export interface SkinSettings {
 
 export const DEFAULT_SETTINGS: SkinSettings = {
   colors: {},
+  scaling: 'smooth',
   card: { scale: 1 },
   center: {
     box: { x: 0.22, y: 0.12, w: 0.56, h: 0.76 },
@@ -66,6 +73,7 @@ export function mergeSettings(rootFirst: readonly SkinManifest[]): SkinSettings 
   const s = structuredClone(DEFAULT_SETTINGS);
   for (const m of rootFirst) {
     Object.assign(s.colors, m.colors);
+    s.scaling = m.scaling ?? s.scaling;
     Object.assign(s.card, m.card);
     Object.assign(s.center, m.center);
     const { layouts, ...pips } = m.pips ?? {};
@@ -140,7 +148,8 @@ const manifest = shape<SkinManifest>({
   name: str,
   extends: str,
   colors: record(str),
-  card: shape({ scale: num }),
+  scaling: oneOf('smooth', 'pixelated'),
+  card: shape({ scale: num, dropScale: num }),
   center: shape({ box, narrowBox: box }),
   pips: shape({
     size: num,

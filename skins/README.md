@@ -14,7 +14,7 @@ A skin is a folder of images plus a `skin.json`. You only draw what you want to 
    - `http://localhost:5173/tools/gallery.html?skin=<your-skin>` to see every card at desktop and phone size;
    - `http://localhost:5173/?skin=<your-skin>` to play with it. The game remembers the last skin you picked this way.
 
-The browser console lists any file the game doesn't recognise (usually a typo in the name) and any mistake in `skin.json`. `npm test` checks every skin listed in `skins.json` too.
+The browser console lists any file the game doesn't recognise (usually a typo in the name) and any mistake in `skin.json`. `npm test` checks that every skin listed in `skins.json` loads (a broken `skin.json` fails it; a stray file doesn't).
 
 ## Names
 
@@ -33,11 +33,17 @@ Every card image can be saved in two ways, and you can use both at once:
 | `name.ink.png` | Only the shape is used. It's filled with the suit colour from `skin.json`, so draw it in any single colour on a transparent background. |
 | `name.png` | Shown exactly as drawn, in full colour. |
 
-If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail. Ink isn't always the suit colour: the card outline uses `card-border` and empty piles use `slot-border` (see [Colours](#colours)). The table felt, buttons and panel can only be painted.
+If both exist, the paint layer goes on top of the ink layer. Use this for suit-coloured linework with painted detail. Ink isn't always the suit colour: the card outline uses `card-border`, empty piles use `slot-border`, and the controls use their text colours (see [Colours](#colours)). The table felt, button and panel can only be painted.
 
 ## All files
 
-Sizes are what to draw at (3× the largest card on screen). Images are scaled to fit, and only the height is fixed: the width can be whatever the shape needs.
+The sizes are the canvas to draw on: 3× the largest card on screen, so they stay sharp on phones. Images are scaled to fit, and only the height is fixed: the width follows the image, so you can trim a canvas to what the shape needs (or keep it, which leaves the same space around every glyph). `skins/_templates/` has blank canvases for the card images.
+
+You only need a few files to start. Anything missing comes from the skin you extend, and several images stand in for each other:
+
+- the corner index suit and the pips: each uses the other when only one is there;
+- the stock's outline (`table/slot-stock`) uses the normal pile outline (`table/slot`);
+- the "Stock" label, "Wins", "New deal" and the win count fall back to text.
 
 ### Corner index
 
@@ -45,9 +51,10 @@ The small rank and suit in the corner. In a tightly fanned column, this is all y
 
 | File | Draw at | Notes |
 |---|---|---|
-| `index/{rank}.ink.png` | 96 px tall | e.g. `index/10.ink.png`. Used for all suits |
-| `index/{rank}-{suit}.png` | 96 px tall | Optional: one suit only, e.g. `index/Q-hearts.png` |
-| `index/{suit}.ink.png` | 72 px tall | e.g. `index/clubs.ink.png` |
+| `index/{rank}.ink.png` | 96 × 96 px | e.g. `index/10.ink.png`. Used for all suits. Use the same canvas for every rank, `10` included |
+| `index/{rank}-{suit}.png` | 96 × 96 px | Optional: one suit only, e.g. `index/Q-hearts.png` |
+| `index/{suit}.ink.png` | 72 × 72 px | e.g. `index/clubs.ink.png`. If missing, the pip is used |
+| `index/0.ink.png` `index/1.ink.png` | 96 × 96 px | Digits for the win counter, which also uses `2` to `9` (`10` is only for cards; the counter writes 10 as `1` and `0`) |
 
 The image's full height fills the slot, so leave the same empty space above and below every glyph (as `classic` does) to keep them lined up.
 
@@ -62,7 +69,7 @@ For each card, the game uses the **first** thing it finds:
 
 This goes through your skin first, then the skin you extend. So your own pip layout for 7 wins over a `center/7-clubs.png` in `classic`.
 
-Draw centre art at **202 × 383 px** (the default centre box). It's scaled to fit the box, centred. Change the box in `skin.json` if you want art to cover more of the card.
+Draw centre art at **202 × 384 px** (the default centre box). It's scaled to fit the box, centred. Change the box in `skin.json` if you want art to cover more of the card.
 
 Every card you can give its own art:
 
@@ -91,7 +98,7 @@ The suit symbols placed by a pip layout, and the single large pip.
 
 | File | Draw at | Notes |
 |---|---|---|
-| `pips/{suit}.ink.png` | 192 px tall | If missing, the corner index suit is used |
+| `pips/{suit}.ink.png` | 192 × 192 px | If missing, the corner index suit is used |
 
 ### Card
 
@@ -102,6 +109,7 @@ The suit symbols placed by a pip layout, and the single large pip.
 | `card/shape.png` | 360 × 504 px × `card.scale` | Optional: the card's outline shape, replacing the rounded corners. Only the alpha is used |
 | `card/outline.ink.png` | same as the shape, or 360 × 504 px without one | Optional: drawn over the background. Ink is tinted with `card-border`; `outline.png` is shown as drawn |
 | `card/outline-{suit}.png` | same | Optional: one suit only |
+| `card/drop.ink.png` / `card/drop.png` | 360 × 504 px × `dropScale` | Optional: shown over the card (or empty pile) a dragged card will land on, instead of the glow. Ink is tinted with `drop-highlight`. It reaches past the card by `card.dropScale` (the same as `card.scale` unless set), so you can draw a glow or a frame around the card |
 
 #### Shaped cards
 
@@ -111,15 +119,28 @@ With it, the shape is used instead, for everything that's drawn as "the card": t
 
 A hand-drawn edge eats into the card: if the wobbles have to stay inside 360 × 504, the card looks smaller than the others. Set `"card": { "scale": 1.1 }` in `skin.json` to let the shape, background and outline reach past the card on every side (here 5% each way). The rank, pips and art stay exactly where they were, and so does the area you can grab. Draw these three images at the larger size (360 × 504 × 1.1 = 396 × 554 px) with the normal card centred in it. Keep the scale small: the extra reaches over neighbouring cards and gaps on the table, and over the top strip of the card above in a fanned column.
 
-### Table and buttons
+### Table
 
 | File | Draw at | Notes |
 |---|---|---|
-| `table/felt.png` | ≥ 1920 × 1080, or a tile | Set `"felt": "tile"` in `skin.json` for a repeating tile. A tile grows and shrinks with the cards, so it looks the same on a phone as on a desktop (see `tileSize`) |
-| `table/slot.ink.png` / `table/slot.png` | 360 × 504 px (× `slotScale`) | Empty pile (foundations and columns). Ink is tinted with `slot-border` |
-| `table/slot-stock.ink.png` / `table/slot-stock.png` | 360 × 504 px (× `slotScale`) | Empty stock pile. Replaces both slot layers and the "Stock" label, so draw your own |
-| `ui/button.png` | any, at 3× | Stretched around the text: corners stay, edges stretch (set `slice`) |
-| `ui/panel.png` | any, at 3× | The "You won" panel, stretched the same way |
+| `table/felt.png` | 1920 × 1080 px, or a tile (e.g. 256 × 256 px) | Set `"felt": "tile"` in `skin.json` for a repeating tile. A tile grows and shrinks with the cards, so it looks the same on a phone as on a desktop (see `tileSize`) |
+| `table/slot.ink.png` / `table/slot.png` | 360 × 504 px (× `slotScale`) | Empty pile. Ink is tinted with `slot-border` |
+| `table/slot-stock.ink.png` / `table/slot-stock.png` | 360 × 504 px (× `slotScale`) | Optional: the empty stock's own outline. Without it, the stock uses `table/slot`. With it, the "Stock" text is left out, so either draw the word in, or add `table/stock` |
+| `table/stock.ink.png` / `table/stock.png` | 240 × 96 px (any size) | The "Stock" label alone, without the outline: just the word. Shown at its own size (a 360 px wide image is as wide as the pile), centred on the stock over its outline. Ink is tinted with `slot-label` |
+| `emblem/{variant}.png` | 360 × 504 px (any width) | Shown next to the stock, as tall as it. One per game: `emblem/bbb.png` for this one. Ink is tinted with `emblem`. Without it there's no emblem. On a phone it's shrunk when the controls would get too cramped |
+
+### Controls
+
+The win counter sits above the New deal button, and the two are as wide as the wider one.
+
+| File | Draw at | Notes |
+|---|---|---|
+| `ui/wins.png` / `ui/wins.ink.png` | 192 × 96 px (any width) | The word "Wins", next to the count. Ink is tinted with `text-muted`. The count is drawn with the corner index digits (see above), tinted with `text` |
+| `ui/new-deal.png` / `ui/new-deal.ink.png` | 384 × 96 px (any width) | The words "New deal", on the button. Ink is tinted with `btn-text` |
+| `ui/button.png` | 256 × 256 px (any size) | Stretched around the label: corners stay, edges stretch (set `slice`). Next to the cards it grows and shrinks with them |
+| `ui/panel.png` | 256 × 256 px (any size) | The "You won" panel, stretched the same way |
+
+Draw the labels like the corner index: the full height is used, so keep some space above and below the letters.
 
 ## skin.json
 
@@ -137,8 +158,13 @@ Everything is optional. Anything you leave out comes from the skin you extend. H
     "felt-center": "#6b8563"
   },
 
-  // Size of card/shape.png (and the background and outline with it) relative to the card. Only used with a shape
-  "card": { "scale": 1.1 },
+  // How images are scaled: "smooth" (default), or "pixelated" to keep hard pixel edges for pixel art.
+  // Pixel art can be drawn at a fraction of the sizes above, e.g. a 90 × 126 card (¼ size)
+  "scaling": "smooth",
+
+  // scale: size of card/shape.png (and the background and outline with it) relative to the card. Only used with a shape
+  // dropScale: the same for card/drop.png, e.g. 1.2 for a frame around the card. Same as scale unless set
+  "card": { "scale": 1.1, "dropScale": 1.2 },
 
   // Where centre art and pips go: 0..1 of the card's width (x, w) and height (y, h)
   "center": {
@@ -189,12 +215,14 @@ Set colours in `"colors"`, by name, with any CSS colour as the value: `"#a33"`, 
 | `suit-spades` `suit-hearts` `suit-diamonds` `suit-clubs` | Everything drawn as ink on a card of that suit: corner index, pips, `.ink` centre art and backgrounds |
 | **Table** | |
 | `felt-center` `felt-edge` | The table: a glow from the centre colour at the top to the edge colour. `felt-edge` also shows behind `table/felt.png` |
-| `slot-border` | The dashed outline of an empty pile (or `table/slot.ink.png` and `table/slot-stock.ink.png`), and the line between the piles and the columns |
-| `slot-label` | The "Stock" text on the empty stock |
-| `drop-highlight` | The glow around the pile your card will land on |
+| `slot-border` | The dashed outline of an empty pile (or `table/slot.ink.png` and `table/slot-stock.ink.png`) |
+| `divider` | The line between the top and bottom half of the table on phones. Same as `slot-border` unless set; `"transparent"` hides it |
+| `slot-label` | The "Stock" text on the empty stock (or `table/stock.ink.png`) |
+| `emblem` | `emblem/{variant}.ink.png`, if the emblem is drawn as ink |
+| `drop-highlight` | The glow around the pile your card will land on, or `card/drop.ink.png` |
 | **Controls** | |
-| `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`) |
-| `text` `text-muted` | The win count next to the buttons: number and label |
+| `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`); `btn-text` also tints `ui/new-deal.ink.png` |
+| `text` `text-muted` | The win counter: number and label (also their `.ink` images) |
 | **"You won"** | |
 | `win-backdrop` | The dimming over the table |
 | `win-panel-bg` `win-panel-text` | The panel (when there's no `ui/panel.png`) and its text |
@@ -214,5 +242,6 @@ On phones, layouts are replaced by one big pip unless `"narrow": "layout"` is se
 ## Tips
 
 - **Start from `classic`.** Open `skins/classic/` to see every file in use, and copy what you want to change. Its images are generated from the original text-based faces by `npm run export:classic`, which overwrites them, so put your drawings in your own skin. Its `skin.json` is hand-written.
+- **Backups and drafts**: files whose name starts with `_` (e.g. `index/_clubs.ink.png`) are ignored, so you can keep old versions next to the real ones.
 - **Templates**: `skins/_templates/` has blank images at the right sizes. `card.png` has guides for the rounded corners, the corner index, the strip that stays visible in a tight fan, and the centre box on desktop and on phones. Put them on a layer under your drawing and hide that layer before saving.
 - **Check the phone layout too.** The gallery shows both sizes. In the game, use a phone viewport in dev tools and look at a long column: only the top strip of each card shows there.

@@ -25,6 +25,19 @@ describe('layout', () => {
     expect(l.cardW).toBeGreaterThan(50);
   });
 
+  it('puts the emblem next to the stock, as tall as it while the controls keep room', () => {
+    const wide = computeLayout(1366, 650, bbb, 1);
+    const stock = wide.slots.stock!;
+    expect(wide.emblem!.h).toBeCloseTo(wide.cardH);
+    expect(wide.emblem!.x).toBeGreaterThan(stock.x + wide.cardW);
+    expect(wide.controls.x).toBeGreaterThan(wide.emblem!.x + wide.emblem!.w);
+
+    const narrow = computeLayout(390, 760, bbb, 1);
+    expect(narrow.emblem!.h).toBeLessThanOrEqual(narrow.cardH * narrow.slots.stock!.scale + 0.01);
+    expect(narrow.controls.w).toBeGreaterThanOrEqual(narrow.cardW * 1.5 - 0.01);
+    expect(computeLayout(390, 760, bbb).emblem).toBeUndefined();
+  });
+
   it('compresses long columns to fit', () => {
     const l = computeLayout(390, 760, bbb);
     const fan = fanFor(l, 't0', 14);

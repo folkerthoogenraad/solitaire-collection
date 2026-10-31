@@ -61,13 +61,20 @@ export class Renderer {
     private variant: Variant,
     faces: CardFaceRenderer,
     private controls: HTMLElement,
+    private emblem?: HTMLElement,
   ) {
     for (const id of variant.piles()) {
       const slot = div('slot');
-      if (id === STOCK) slot.dataset.label = 'Stock';
+      if (id === STOCK) {
+        slot.classList.add('stock');
+        const label = div('slot-label');
+        label.textContent = 'Stock';
+        slot.append(label);
+      }
       this.slots.set(id, slot);
       this.layer.append(slot);
     }
+    if (emblem) this.layer.append(emblem);
     for (const c of buildCards(variant.deck)) {
       const el = div('card');
       el.dataset.id = c.id;
@@ -101,6 +108,10 @@ export class Renderer {
 
     const c = layout.controls;
     Object.assign(this.controls.style, { width: `${c.w}px`, height: `${c.h}px`, transform: transform(c.x, c.y, 1) });
+
+    const e = layout.emblem;
+    if (this.emblem) this.emblem.hidden = !e;
+    if (this.emblem && e) Object.assign(this.emblem.style, { width: `${e.w}px`, height: `${e.h}px`, transform: transform(e.x, e.y, 1) });
   }
 
   render(state: GameState, opts: RenderOptions = {}): void {

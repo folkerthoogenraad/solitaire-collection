@@ -2,13 +2,16 @@
   "name": "Classic",
   "colors": {
     "card-bg": "#ffffe5",
-    "card-border": "#c3c3a0",
-    "suit-spades": "#000",
-    "suit-hearts": "#DD0000",
-    "suit-diamonds": "#DD0000",
-    "suit-clubs": "#000",
+    "card-border-old": "#c3c3a0",
+    "card-border": "#000",
+    "suit-spades": "#215b7d",
+    "suit-hearts": "#c12f2f",
+    "suit-diamonds": "#bd8d34",
+    "suit-clubs": "#294123",
     "felt-center": "#3e485d",
-    "felt-edge": "#3e485d"
+    "felt-edge": "#3e485d",
+    "divider": "transparent",
+    "drop-highlight": "#70655a"
   },
   "center": {
     "box": { "x": 0.22, "y": 0.12, "w": 0.56, "h": 0.76 },
@@ -21,6 +24,10 @@
     "felt": "tile",
     "tileSize": 1.5,
     "slotScale": 1.02
+  },
+  "ui": {
+    "button": { "slice": 20 },
+    "panel": { "slice": 24 }
   },
   "pips": {
     "size": 0.28,

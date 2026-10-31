@@ -2,10 +2,10 @@ import { parseRegistry, type SkinRegistry } from './manifest';
 import { collectSkins, type SkinSource } from './resolve';
 
 // Found at build time: dropping a file into a skin folder is enough. `?url` only embeds the URL;
-// images are fetched when a face actually uses them.
+// images are fetched when a face actually uses them. Files starting with `_` are left out (backups, drafts).
 const manifests = import.meta.glob('/skins/*/skin.json', { eager: true, import: 'default' });
 const registries = import.meta.glob('/skins/skins.json', { eager: true, import: 'default' });
-const files = import.meta.glob<string>(['/skins/*/**/*.{png,webp,svg}', '!/skins/_templates/**'], {
+const files = import.meta.glob<string>(['/skins/*/**/*.{png,webp,svg}', '!/skins/_templates/**', '!/skins/*/**/_*'], {
   eager: true,
   query: '?url',
   import: 'default',

@@ -14,9 +14,19 @@ import { applyMotion } from './ui/motion';
 import { Renderer } from './ui/renderer';
 import { loadSkin } from './ui/skin/load';
 import { createWinOverlay } from './ui/win';
+import { preventZoom } from './ui/zoom';
 
 const variant = bbb;
 const board = document.getElementById('board')!;
+const loader = document.getElementById('loader');
+preventZoom();
+
+/** Fills the loader's bar: the bundle is the first part, the skin's images the rest. */
+function progress(p: number) {
+  loader?.style.setProperty('--p', String(p));
+  loader?.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+}
+progress(0.2);
 
 // ?skin=<id> and ?motion=system|full|reduced pick a setting and remember it.
 const params = new URLSearchParams(location.search);
@@ -26,7 +36,7 @@ if (isMotion(motion)) settings.motion = motion;
 applyMotion(board, settings.motion ?? 'system');
 
 const requested = params.get('skin') ?? settings.skin;
-const skin = await loadSkin(variant.deck, board, requested);
+const skin = await loadSkin(variant, board, requested, (done, total) => progress(0.2 + (0.8 * done) / total));
 if (skin.id && skin.id === requested) settings.skin = skin.id;
 saveSettings(settings);
 
@@ -34,9 +44,11 @@ const loaded = load(variant);
 let state: GameState = loaded.game ?? variant.deal(randomSeed());
 let stats: Stats = loaded.stats;
 
-const controls = createControls(newDeal, () => state.started && !state.won);
-const win = createWinOverlay(newDeal);
-const renderer = new Renderer(board, variant, skin.faces, controls.el);
+const controls = createControls(skin.ui, newDeal);
+const win = createWinOverlay(skin.ui, newDeal);
+const emblemAr = skin.ui.ar('emblem');
+const emblem = emblemAr ? skin.ui.glyph('emblem', 'emblem', '') : undefined;
+const renderer = new Renderer(board, variant, skin.faces, controls.el, emblem);
 const cascadeButton = createCascadeButton(() => cascadeTarget && cascade(cascadeTarget));
 renderer.layer.append(cascadeButton.el);
 board.append(win.el);
@@ -123,7 +135,7 @@ new ResizeObserver(([entry]) => {
   const { width, height } = entry!.contentRect;
   if (!width || !height) return;
   cascadeButton.hide();
-  renderer.setLayout(computeLayout(width, height, variant));
+  renderer.setLayout(computeLayout(width, height, variant, emblemAr));
   renderer.render(state, firstLayout && !loaded.game ? { deal: true } : { instant: true });
   if (firstLayout) {
     if (state.won) win.show(stats.wins);
@@ -134,10 +146,11 @@ new ResizeObserver(([entry]) => {
 
 /** The loader lives in index.html; everything it waits for (bundle, skin images) is in by now. */
 function hideLoader() {
-  const loader = document.getElementById('loader');
   if (!loader) return;
+  progress(1);
   loader.classList.add('done');
-  loader.addEventListener('transitionend', () => loader.remove(), { once: true });
+  // The bar's own transition ends here too.
+  loader.addEventListener('transitionend', (e) => e.propertyName === 'opacity' && loader.remove());
 }
 
 persist();

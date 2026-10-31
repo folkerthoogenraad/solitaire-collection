@@ -88,6 +88,8 @@
   }
 
   for (const r of RANKS) glyph(`classic/index/${r}.ink.png`, r, 700, 96, -0.05 * 96);
+  // Digits the ranks lack, for the win counter
+  for (const d of ['0', '1']) glyph(`classic/index/${d}.ink.png`, d, 700, 96, -0.05 * 96);
   for (const [name, g] of Object.entries(SUITS)) {
     glyph(`classic/index/${name}.ink.png`, g, 700, 72);
     glyph(`classic/pips/${name}.ink.png`, g, 400, 192);

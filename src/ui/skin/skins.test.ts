@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { emperorDeck } from '../../core/decks/emperor';
 import { catalog } from './catalog';
-import { chainFor, unknownFiles } from './resolve';
+import { chainFor } from './resolve';
 
-/** Checks the real skins in /skins, so a broken skin fails the build instead of the game. */
+/**
+ * Checks the real skins in /skins, so a broken skin fails the build instead of the game. Files no card uses are
+ * left to the dev console: a skin in progress can have those, and they don't break anything.
+ */
 describe('skins folder', () => {
   const cat = catalog();
 
@@ -13,9 +16,8 @@ describe('skins folder', () => {
   });
 
   for (const id of cat.registry.skins) {
-    it(`${id}: resolves and has no unknown files`, () => {
+    it(`${id}: resolves`, () => {
       expect(() => chainFor(cat.skins, id)).not.toThrow();
-      expect(unknownFiles(cat.skins.get(id)!, emperorDeck)).toEqual([]);
     });
   }
 

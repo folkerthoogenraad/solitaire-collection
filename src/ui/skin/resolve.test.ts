@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emperorDeck } from '../../core/decks/emperor';
 import { buildCards, type Card } from '../../core/deck';
 import { SkinError } from './manifest';
-import { chainFor, collectSkins, parseAssetPath, resolveChrome, resolveFace, settingsFor, unknownFiles } from './resolve';
+import { chainFor, collectSkins, parseAssetPath, resolveChrome, resolveFace, resolveUi, settingsFor, unknownFiles } from './resolve';
 
 const deck = emperorDeck;
 const card = (id: string): Card => buildCards(deck).find((c) => c.id === id)!;
@@ -124,8 +124,41 @@ describe('index, background and chrome', () => {
       slotInk: '/skins/mine/table/slot.ink.png',
       slotStock: undefined,
       slotStockInk: undefined,
+      stock: undefined,
+      stockInk: undefined,
+      drop: undefined,
+      dropInk: undefined,
       panel: undefined,
     });
+  });
+
+  it('uses pips for the corner suit and the corner suit for pips, whichever the skin has', () => {
+    const own = skins({ classic: { files: ['index/hearts.ink.png'] }, mine: { files: ['pips/hearts.ink.png'] } });
+    expect(resolve(own, 'mine', 'H2').suit).toEqual({ ink: '/skins/mine/pips/hearts.ink.png' });
+    expect(resolve(own, 'classic', 'H2').center).toMatchObject({ pip: { ink: '/skins/classic/index/hearts.ink.png' } });
+  });
+
+  it('resolves the emblem per variant, the control labels and the counter digits', () => {
+    const own = skins({
+      classic: { files: ['index/0.ink.png', 'index/1.ink.png', 'index/10.ink.png', 'ui/wins.png'] },
+      mine: { files: ['emblem/bbb.png', 'emblem/other.png', 'index/1.png', 'ui/new-deal.ink.png'] },
+    });
+    const ui = resolveUi(chainFor(own.skins, 'mine'), 'bbb');
+    expect(ui.emblem).toEqual({ paint: '/skins/mine/emblem/bbb.png' });
+    expect(ui.wins).toEqual({ paint: '/skins/classic/ui/wins.png' });
+    expect(ui['new-deal']).toEqual({ ink: '/skins/mine/ui/new-deal.ink.png' });
+    expect(ui['0']).toEqual({ ink: '/skins/classic/index/0.ink.png' });
+    expect(ui['1']).toEqual({ paint: '/skins/mine/index/1.png' });
+    expect(ui['2']).toEqual({});
+    expect(resolveUi(chainFor(own.skins, 'mine'), 'klondike').emblem).toEqual({});
+    expect(unknownFiles(own.skins.get('mine')!, deck)).toEqual([]);
+  });
+
+  it('inherits the image scaling', () => {
+    const pixel = skins({ classic: {}, a: { manifest: { scaling: 'pixelated' } }, b: { manifest: { extends: 'a' } } });
+    expect(settingsFor(chainFor(pixel.skins, 'classic')).scaling).toBe('smooth');
+    expect(settingsFor(chainFor(pixel.skins, 'b')).scaling).toBe('pixelated');
+    expect(skins({ classic: { manifest: { scaling: 'blurry' } } }).problems[0]).toMatch(/scaling: expected/);
   });
 
   it('inherits the card and slot scale', () => {
