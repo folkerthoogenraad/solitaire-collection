@@ -13,6 +13,10 @@ npm run export:classic  # regenerate skins/classic images and templates (needs E
 
 `dist/` uses relative paths, so it can be hosted from any static host or sub-path.
 
+## Deployment
+
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs the tests and build on every push and pull request, and deploys `main` to GitHub Pages (https://folkerthoogenraad.github.io/web-solitaire/). One-time setup: in the repo's Settings → Pages, set the source to "GitHub Actions".
+
 ## Layout
 
 - `src/core`: pure game logic (deck, variant interface, BBB ruleset, seeded deal). No DOM.
