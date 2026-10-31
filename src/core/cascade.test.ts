@@ -29,4 +29,20 @@ describe('cascade', () => {
     const state = board({ t3: ['S2'] });
     expect(nextCascadeMove(bbb, state, 'f0')).toBeNull();
   });
+
+  it('takes a column the next card down from a foundation', () => {
+    const state = board({ f1: ['SA', 'S2', 'S3', 'S4'], t3: ['H9', 'S5'] });
+    expect(nextCascadeMove(bbb, state, 't3')).toEqual({ from: 'f1', to: 't3', count: 1 });
+  });
+
+  it('does not take a column cards from other columns', () => {
+    const state = board({ t2: ['S4'], t3: ['S5'] });
+    expect(nextCascadeMove(bbb, state, 't3')).toBeNull();
+  });
+
+  it('leaves skipped piles alone', () => {
+    const state = board({ f0: ['SA', 'S2', 'S3'], t3: ['S5', 'S4'] });
+    expect(nextCascadeMove(bbb, state, 'f0', new Set(['t3']))).toBeNull();
+    expect(nextCascadeMove(bbb, state, 'f0')).toEqual({ from: 't3', to: 'f0', count: 1 });
+  });
 });

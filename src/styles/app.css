@@ -169,7 +169,7 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
 .idx .s { --h: calc(var(--cw) * 0.165); }
 .idx.br { top: auto; left: auto; bottom: calc(var(--cw) * 0.05); right: calc(var(--cw) * 0.07); transform: rotate(180deg); }
 
-/* One-line index when the column is fanned tightly (always in narrow mode) */
+/* One-line index for column cards in narrow mode (phones) */
 .card.compact .idx:not(.br) { flex-direction: row; gap: calc(var(--cw) * 0.02); }
 .card.compact .idx .r { --h: calc(var(--cw) * 0.24); }
 .card.compact .idx .s { --h: calc(var(--cw) * 0.19); }
@@ -236,7 +236,7 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
 }
 .board[data-mode="narrow"] .controls { font-size: calc(var(--cw) * 0.18); }
 .board[data-mode="narrow"] .controls .btn { padding: 0.3em 0.5em; }
-.wins, .btn.deal { display: flex; align-items: center; justify-content: center; }
+.wins, .btn.deal, .btn.cascade { display: flex; align-items: center; justify-content: center; }
 .wins { gap: 0.25em; color: var(--text-muted); white-space: nowrap; }
 .wins .count { display: flex; color: var(--text); }
 .wins .g, .btn > .g { --h: 1em; }
@@ -296,7 +296,8 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   transition: transform 300ms var(--ease);
 }
 .win.show .panel { transform: scale(1); }
-.win h2 { margin: 0 0 8px; font-size: 28px; }
+.win h2 { display: flex; justify-content: center; margin: 0 0 8px; font-size: 28px; }
+.win h2 .g { --h: 1em; }
 .win .wins { margin-bottom: 16px; font-size: 24px; color: inherit; }
 .win .wins .count { color: inherit; }
 .win .btn.deal { display: inline-flex; }

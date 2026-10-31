@@ -5,13 +5,26 @@ import type { CardFaceRenderer } from '../faces';
 import { catalog } from './catalog';
 import { DEFAULT_SETTINGS, type Box, type SkinSettings } from './manifest';
 import { skinFaces, skinUi, type LoadedImage, type SkinUi } from './faces';
-import { chainFor, resolveChrome, resolveFace, resolveUi, settingsFor, unknownFiles, type FaceSpec, type SkinSource } from './resolve';
+import {
+  chainFor,
+  resolveChrome,
+  resolveFace,
+  resolveSounds,
+  resolveUi,
+  settingsFor,
+  unknownFiles,
+  type FaceSpec,
+  type SkinSource,
+  type SoundName,
+} from './resolve';
 
 export interface LoadedSkin {
   /** The skin actually in use, after falling back from a missing or broken one. */
   id: string | null;
   faces: CardFaceRenderer;
   ui: SkinUi;
+  /** URLs of each sound's variants. Not preloaded: the game starts without them. */
+  sounds: Partial<Record<SoundName, string[]>>;
 }
 
 async function loadImage(url: string): Promise<LoadedImage> {
@@ -131,5 +144,6 @@ export async function loadSkin(
 
   const chrome = Object.fromEntries(Object.entries(chromePaths).map(([k, p]) => [k, p ? images.get(p) : undefined]));
   apply(board, id, settings, chrome);
-  return { id, faces: skinFaces(specs, images), ui: skinUi(ui, images) };
+  const sounds = Object.fromEntries(Object.entries(resolveSounds(chain)).map(([name, list]) => [name, list.map((p) => cat.urls[p]!)]));
+  return { id, faces: skinFaces(specs, images), ui: skinUi(ui, images), sounds };
 }

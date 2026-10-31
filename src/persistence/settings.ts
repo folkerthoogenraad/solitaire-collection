@@ -10,6 +10,8 @@ export const isMotion = (v: unknown): v is Motion => MOTIONS.includes(v as Motio
 export interface Settings {
   skin?: string;
   motion?: Motion;
+  /** Skin sounds; on unless turned off. */
+  sound?: boolean;
 }
 
 export function loadSettings(): Settings {
@@ -18,6 +20,7 @@ export function loadSettings(): Settings {
     const settings: Settings = {};
     if (typeof data?.skin === 'string') settings.skin = data.skin;
     if (isMotion(data?.motion)) settings.motion = data.motion;
+    if (typeof data?.sound === 'boolean') settings.sound = data.sound;
     return settings;
   } catch {
     return {};

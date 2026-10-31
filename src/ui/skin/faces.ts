@@ -92,7 +92,7 @@ export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: Readonly
   };
 }
 
-/** Skin images shown outside the cards: the variant's emblem, the control labels and the win counter's digits. */
+/** Skin images shown outside the cards: the variant's emblem, the labels on the controls and panels, and the win counter's digits. */
 export interface SkinUi {
   /** The skin's image for `key`, or `text` where it has none. */
   glyph(cls: string, key: UiKey, text: string): HTMLElement;

@@ -10,12 +10,14 @@ export interface WinOverlay {
 export function createWinOverlay(ui: SkinUi, onNewDeal: () => void): WinOverlay {
   const el = document.createElement('div');
   el.className = 'win';
-  el.innerHTML = `
-    <div class="panel">
-      <h2>You won!</h2>
-    </div>`;
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  const title = document.createElement('h2');
+  title.setAttribute('aria-label', 'You won!');
+  title.append(ui.glyph('label', 'victory', 'You won!'));
   const count = createWinCount(ui);
-  el.querySelector('.panel')!.append(count.el, createNewDealButton(ui, onNewDeal));
+  panel.append(title, count.el, createNewDealButton(ui, onNewDeal));
+  el.append(panel);
 
   return {
     el,

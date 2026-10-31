@@ -1,7 +1,9 @@
 import type { Rect } from './layout';
+import type { SkinUi } from './skin/faces';
 
 export interface CascadeButton {
   el: HTMLElement;
+  readonly shown: boolean;
   /** Offer a cascade onto the pile at `anchor` for a few seconds; `bounds` is the width it must stay inside. */
   show(anchor: Rect, bounds: number): void;
   hide(): void;
@@ -10,12 +12,13 @@ export interface CascadeButton {
 const OFFER_MS = 4000;
 const EDGE = 4;
 
-/** Short-lived "Autocascade" button over the foundation a card was just played on. */
-export function createCascadeButton(onCascade: () => void): CascadeButton {
+/** Short-lived "Autocascade" button over the pile a card was just played on, labelled with the skin's `ui/autocascade`. */
+export function createCascadeButton(ui: SkinUi, onCascade: () => void): CascadeButton {
   const el = document.createElement('button');
   el.className = 'btn cascade';
   el.type = 'button';
-  el.textContent = 'Autocascade';
+  el.setAttribute('aria-label', 'Autocascade');
+  el.append(ui.glyph('label', 'autocascade', 'Autocascade'));
 
   let timer = 0;
   const hide = () => {
@@ -32,6 +35,9 @@ export function createCascadeButton(onCascade: () => void): CascadeButton {
 
   return {
     el,
+    get shown() {
+      return timer !== 0;
+    },
     show(anchor, bounds) {
       clearTimeout(timer);
       // Centred under the card's lower part, kept on screen at the edges.

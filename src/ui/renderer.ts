@@ -23,7 +23,7 @@ export interface RenderOptions {
 
 /** Card move and deal durations; also written to the board as `--move-ms` / `--deal-ms` for the CSS transitions. */
 const MOVE_MS = 400;
-const DEAL_STAGGER_MS = 14;
+export const DEAL_STAGGER_MS = 50;
 const DEAL_MS = 320;
 const RAISED_Z = 500;
 const DRAG_Z = 1000;
@@ -210,7 +210,7 @@ export class Renderer {
       const slot = this.layout.slots[pile]!;
       const tableau = pileKind(pile) === 'tableau';
       const fan = tableau ? fanFor(this.layout, pile, ids.length) : 0;
-      const compact = tableau && fan < this.layout.compactFan - 0.5;
+      const compact = tableau && this.layout.compact;
       ids.forEach((id, i) => out.set(id, { x: slot.x, y: slot.y + i * fan, scale: slot.scale, z: i + 1, compact }));
     }
     return out;

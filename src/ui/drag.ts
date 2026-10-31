@@ -11,6 +11,8 @@ export interface DragHost {
   commit(move: Move): boolean;
   /** Re-render the current state, raising `ids` while they travel back. */
   restore(ids: readonly string[]): void;
+  /** Cards were lifted off their pile. */
+  pickUp(ids: readonly string[]): void;
 }
 
 interface Session {
@@ -172,6 +174,7 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     };
     // Lift right away on press, not on the first move.
     renderer.beginDrag(ids);
+    host.pickUp(ids);
     frame = requestAnimationFrame(update);
   });
 

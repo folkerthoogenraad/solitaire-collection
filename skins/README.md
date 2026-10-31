@@ -22,7 +22,7 @@ Suits: `spades` `hearts` `diamonds` `clubs`
 
 Ranks: `A` `2` `3` `4` `5` `6` `7` `8` `9` `10` `J` `Q` `K` `E`
 
-Formats: `.png`, `.webp` or `.svg`.
+Formats: `.png`, `.webp` or `.svg` for images; `.wav`, `.mp3` or `.ogg` for sounds.
 
 ## Ink or paint
 
@@ -137,10 +137,29 @@ The win counter sits above the New deal button, and the two are as wide as the w
 |---|---|---|
 | `ui/wins.png` / `ui/wins.ink.png` | 192 × 96 px (any width) | The word "Wins", next to the count. Ink is tinted with `text-muted`. The count is drawn with the corner index digits (see above), tinted with `text` |
 | `ui/new-deal.png` / `ui/new-deal.ink.png` | 384 × 96 px (any width) | The words "New deal", on the button. Ink is tinted with `btn-text` |
+| `ui/autocascade.png` / `ui/autocascade.ink.png` | 384 × 96 px (any width) | The label of the autocascade button that pops up over a pile: a word or an icon. Ink is tinted with `btn-text` |
+| `ui/victory.png` / `ui/victory.ink.png` | 384 × 96 px (any width) | The words "You won!" at the top of the "You won" panel. Ink is tinted with `win-panel-text` |
 | `ui/button.png` | 256 × 256 px (any size) | Stretched around the label: corners stay, edges stretch (set `slice`). Next to the cards it grows and shrinks with them |
 | `ui/panel.png` | 256 × 256 px (any size) | The "You won" panel, stretched the same way |
 
+The "You won" panel shows the same "Wins" and New deal labels; there, `ui/wins.ink.png` and the digits are tinted with `win-panel-text`.
+
 Draw the labels like the corner index: the full height is used, so keep some space above and below the letters.
+
+### Sounds
+
+| File | Plays when |
+|---|---|
+| `sounds/pickup.wav` | You pick up a card |
+| `sounds/place.wav` | A card lands on another pile (also each card of an autocascade) |
+| `sounds/cancel.wav` | Optional: a card you picked up goes back where it was (dropped where it doesn't fit, or not moved). Silent without it |
+| `sounds/shuffle.wav` | New deal |
+| `sounds/deal.wav` | New deal: for each card as it flies out (at most every 50 ms), a little quieter |
+| `sounds/draw.wav` | Not used yet: for games that draw from the stock |
+
+Add numbered files for variety, e.g. `sounds/place-2.wav` and `sounds/place-3.wav`: each time, one of them is picked at random. A skin with any file for a sound replaces all of that sound's files from the skin it extends. `classic` has all of them but `cancel`, so every skin has sound unless it brings its own.
+
+Keep them short and trimmed: they play the moment something happens, and several can overlap. Browsers only allow sound after the first tap, click or key press, so the very first one can be silent. `?sound=off` (or `?sound=on`) in the address turns sound off (or back on), and is remembered.
 
 ## skin.json
 
@@ -221,11 +240,11 @@ Set colours in `"colors"`, by name, with any CSS colour as the value: `"#a33"`, 
 | `emblem` | `emblem/{variant}.ink.png`, if the emblem is drawn as ink |
 | `drop-highlight` | The glow around the pile your card will land on, or `card/drop.ink.png` |
 | **Controls** | |
-| `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`); `btn-text` also tints `ui/new-deal.ink.png` |
+| `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`); `btn-text` also tints `ui/new-deal.ink.png` and `ui/autocascade.ink.png` |
 | `text` `text-muted` | The win counter: number and label (also their `.ink` images) |
 | **"You won"** | |
 | `win-backdrop` | The dimming over the table |
-| `win-panel-bg` `win-panel-text` | The panel (when there's no `ui/panel.png`) and its text |
+| `win-panel-bg` `win-panel-text` | The panel (when there's no `ui/panel.png`) and its text, including `ui/victory.ink.png` |
 
 The defaults are in `src/styles/theme.css`.
 

@@ -33,8 +33,8 @@ export interface Layout {
   bottom: Record<PileId, number>;
   /** Nominal vertical offset between cards in a column. */
   fan: number;
-  /** Below this fan the card index switches to a single line. */
-  compactFan: number;
+  /** Column cards use the one-line index. Fixed per mode: a column that gets compressed only moves its cards closer. */
+  compact: boolean;
   controls: Rect;
   /** The variant's emblem, next to the stock; only when the skin has one. */
   emblem?: Rect;
@@ -112,7 +112,7 @@ function wideLayout(width: number, height: number, variant: Variant, emblemAr: n
     slots[tableauId(i)] = { x: left + i * (cw + gap), y, scale: 1 };
     bottom[tableauId(i)] = height - pad;
   }
-  return { mode: 'wide', cardW: cw, cardH: ch, slots, bottom, fan: cw * 0.43, compactFan: cw * 0.43, ...top, dividers: [] };
+  return { mode: 'wide', cardW: cw, cardH: ch, slots, bottom, fan: cw * 0.43, compact: false, ...top, dividers: [] };
 }
 
 function narrowLayout(width: number, height: number, variant: Variant, emblemAr: number | undefined): Layout {
@@ -153,7 +153,7 @@ function narrowLayout(width: number, height: number, variant: Variant, emblemAr:
     slots,
     bottom,
     fan: cw * 0.38,
-    compactFan: Infinity,
+    compact: true,
     ...top,
     dividers: [{ x: left, y: band2 - bandGap / 2, w: total, h: 1 }],
   };

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emperorDeck } from '../../core/decks/emperor';
 import { buildCards, type Card } from '../../core/deck';
 import { SkinError } from './manifest';
-import { chainFor, collectSkins, parseAssetPath, resolveChrome, resolveFace, resolveUi, settingsFor, unknownFiles } from './resolve';
+import { chainFor, collectSkins, parseAssetPath, parseSoundPath, resolveChrome, resolveFace, resolveSounds, resolveUi, settingsFor, unknownFiles } from './resolve';
 
 const deck = emperorDeck;
 const card = (id: string): Card => buildCards(deck).find((c) => c.id === id)!;
@@ -141,12 +141,14 @@ describe('index, background and chrome', () => {
   it('resolves the emblem per variant, the control labels and the counter digits', () => {
     const own = skins({
       classic: { files: ['index/0.ink.png', 'index/1.ink.png', 'index/10.ink.png', 'ui/wins.png'] },
-      mine: { files: ['emblem/bbb.png', 'emblem/other.png', 'index/1.png', 'ui/new-deal.ink.png'] },
+      mine: { files: ['emblem/bbb.png', 'emblem/other.png', 'index/1.png', 'ui/new-deal.ink.png', 'ui/autocascade.ink.png', 'ui/victory.png'] },
     });
     const ui = resolveUi(chainFor(own.skins, 'mine'), 'bbb');
     expect(ui.emblem).toEqual({ paint: '/skins/mine/emblem/bbb.png' });
     expect(ui.wins).toEqual({ paint: '/skins/classic/ui/wins.png' });
     expect(ui['new-deal']).toEqual({ ink: '/skins/mine/ui/new-deal.ink.png' });
+    expect(ui.autocascade).toEqual({ ink: '/skins/mine/ui/autocascade.ink.png' });
+    expect(ui.victory).toEqual({ paint: '/skins/mine/ui/victory.png' });
     expect(ui['0']).toEqual({ ink: '/skins/classic/index/0.ink.png' });
     expect(ui['1']).toEqual({ paint: '/skins/mine/index/1.png' });
     expect(ui['2']).toEqual({});
@@ -176,5 +178,25 @@ describe('unknown files', () => {
   it('lists typos and tinted table images', () => {
     const all = skins({ classic: { files: ['center/7-club.png', 'center/7-clubs.png', 'table/felt.ink.png', 'ui/panel.png', 'card/shape.png', 'card/outline-hearts.png', 'table/slot.ink.png'] } });
     expect(unknownFiles(all.skins.get('classic')!, deck)).toEqual(['center/7-club', expect.stringMatching(/^table\/felt\.ink/)]);
+  });
+});
+
+describe('sounds', () => {
+  it('groups numbered files as variants of one sound', () => {
+    expect(parseSoundPath('sounds/place-2.wav')).toBe('place');
+    expect(parseSoundPath('sounds/pickup.ogg')).toBe('pickup');
+    expect(parseSoundPath('index/A.png')).toBeNull();
+  });
+
+  it('takes each sound from the first skin that has it, all variants together', () => {
+    const all = skins({
+      classic: { files: ['sounds/place.wav', 'sounds/deal.wav'] },
+      mine: { files: ['sounds/place.mp3', 'sounds/place-2.mp3', 'sounds/plop.wav'] },
+    });
+    expect(resolveSounds(chainFor(all.skins, 'mine'))).toEqual({
+      place: ['/skins/mine/sounds/place.mp3', '/skins/mine/sounds/place-2.mp3'],
+      deal: ['/skins/classic/sounds/deal.wav'],
+    });
+    expect(unknownFiles(all.skins.get('mine')!, deck)).toEqual(['sounds/plop']);
   });
 });

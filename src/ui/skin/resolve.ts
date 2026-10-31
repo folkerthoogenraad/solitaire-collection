@@ -15,7 +15,12 @@ export interface SkinSource {
   manifest: SkinManifest;
   /** Keyed by path inside the skin without layer or extension, e.g. `center/7-clubs`. */
   assets: Map<string, Asset>;
+  /** Sound name → source paths of its variants, e.g. `place` → `sounds/place.wav`, `sounds/place-2.wav`. */
+  sounds: Map<string, string[]>;
 }
+
+export const SOUNDS = ['shuffle', 'deal', 'draw', 'pickup', 'place', 'cancel'] as const;
+export type SoundName = (typeof SOUNDS)[number];
 
 export interface Pip {
   x: number;
@@ -69,6 +74,13 @@ export function parseAssetPath(rel: string): { key: string; layer: keyof Asset }
   return m ? { key: m[1]!, layer: m[2] ? 'ink' : 'paint' } : null;
 }
 
+const SOUND_FILE = /^sounds\/(.+?)(?:-\d+)?\.(wav|mp3|ogg)$/;
+
+/** `sounds/place-2.wav` → `place`: numbered files are variants of the same sound. */
+export function parseSoundPath(rel: string): string | null {
+  return SOUND_FILE.exec(rel)?.[1] ?? null;
+}
+
 /**
  * Group globbed files into skins. Keys look like `/skins/<id>/skin.json` and `/skins/<id>/<path>`.
  * Skins with a broken manifest are left out and reported.
@@ -84,7 +96,7 @@ export function collectSkins(
   for (const [path, raw] of Object.entries(manifests)) {
     const id = split(path)![1]!;
     try {
-      skins.set(id, { id, manifest: parseManifest(raw, `${id}/skin.json`), assets: new Map() });
+      skins.set(id, { id, manifest: parseManifest(raw, `${id}/skin.json`), assets: new Map(), sounds: new Map() });
     } catch (e) {
       problems.push(e instanceof SkinError ? e.message : String(e));
     }
@@ -94,6 +106,11 @@ export function collectSkins(
     const [, id, rel] = split(path)!;
     const skin = skins.get(id!);
     if (!skin) continue;
+    const sound = parseSoundPath(rel!);
+    if (sound) {
+      skin.sounds.set(sound, [...(skin.sounds.get(sound) ?? []), path]);
+      continue;
+    }
     const parsed = parseAssetPath(rel!);
     if (!parsed) continue;
     const asset = skin.assets.get(parsed.key) ?? {};
@@ -192,28 +209,40 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
 }
 
 /** Images the controls and the table show as elements: see `UiAssets`. */
-export type UiKey = 'emblem' | 'wins' | 'new-deal' | Digit;
+export type UiKey = 'emblem' | 'wins' | 'new-deal' | 'autocascade' | 'victory' | Digit;
 export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
 export type UiAssets = Record<UiKey, Asset>;
 
 export const DIGITS: readonly Digit[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-/** The variant's emblem, the control labels, and the win counter's digits (corner index images, so 10 is 1 and 0). */
+/** The variant's emblem, the labels of the controls and the "You won" panel, and the win counter's digits (corner index images, so 10 is 1 and 0). */
 export function resolveUi(chain: readonly SkinSource[], variantId: string): UiAssets {
   const ui = {
     emblem: lookup(chain, `emblem/${variantId}`),
     wins: lookup(chain, 'ui/wins'),
     'new-deal': lookup(chain, 'ui/new-deal'),
+    autocascade: lookup(chain, 'ui/autocascade'),
+    victory: lookup(chain, 'ui/victory'),
   } as UiAssets;
   for (const d of DIGITS) ui[d] = lookup(chain, `index/${d}`);
   return ui;
+}
+
+/** Each sound from the first skin in the chain that has any variant of it, so a skin replaces a sound as a whole. */
+export function resolveSounds(chain: readonly SkinSource[]): Partial<Record<SoundName, string[]>> {
+  const out: Partial<Record<SoundName, string[]>> = {};
+  for (const name of SOUNDS) {
+    const hit = chain.find((s) => s.sounds.has(name));
+    if (hit) out[name] = hit.sounds.get(name)!;
+  }
+  return out;
 }
 
 /** Files in a skin that no lookup can ever reach: usually a typo in the name. */
 export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
   const ranks = deck.ranks.map((r) => r.label);
   const suits = deck.suits.map((s) => s.name);
-  const any = new Set<string>(['card/background', 'card/outline', 'card/shape', 'card/drop', 'table/slot', 'table/slot-stock', 'table/stock', 'ui/wins', 'ui/new-deal']);
+  const any = new Set<string>(['card/background', 'card/outline', 'card/shape', 'card/drop', 'table/slot', 'table/slot-stock', 'table/stock', 'ui/wins', 'ui/new-deal', 'ui/autocascade', 'ui/victory']);
   for (const d of DIGITS) any.add(`index/${d}`);
   for (const s of suits) any.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
   for (const r of ranks) {
@@ -229,5 +258,6 @@ export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
     if (paintOnly.has(key) && !asset.ink) continue;
     out.push(paintOnly.has(key) ? `${key}.ink (the felt, button and panel can't be tinted)` : key);
   }
+  for (const name of skin.sounds.keys()) if (!SOUNDS.includes(name as SoundName)) out.push(`sounds/${name}`);
   return out;
 }
