@@ -32,10 +32,19 @@ describe('layout', () => {
     expect(wide.emblem!.x).toBeGreaterThan(stock.x + wide.cardW);
     expect(wide.controls.x).toBeGreaterThan(wide.emblem!.x + wide.emblem!.w);
 
-    const narrow = computeLayout(390, 760, bbb, 1);
-    expect(narrow.emblem!.h).toBeLessThanOrEqual(narrow.cardH * narrow.slots.stock!.scale + 0.01);
-    expect(narrow.controls.w).toBeGreaterThanOrEqual(narrow.cardW * 1.5 - 0.01);
     expect(computeLayout(390, 760, bbb).emblem).toBeUndefined();
+  });
+
+  it('puts the emblem and controls in a row of their own above the stock and foundations on a phone', () => {
+    const narrow = computeLayout(390, 760, bbb, 2);
+    const stock = narrow.slots.stock!;
+    expect(narrow.emblem!.x).toBeCloseTo(stock.x);
+    expect(narrow.emblem!.y + narrow.emblem!.h).toBeLessThan(stock.y);
+    expect(narrow.controls.y + narrow.controls.h).toBeLessThan(stock.y);
+    expect(narrow.controls.x).toBeGreaterThan(narrow.emblem!.x + narrow.emblem!.w);
+    expect(narrow.controls.w).toBeGreaterThanOrEqual(narrow.cardW * 1.5 - 0.01);
+    expect(narrow.slots.f0!.y).toBe(stock.y);
+    expect(stock.scale).toBe(1);
   });
 
   it('compresses long columns to fit', () => {

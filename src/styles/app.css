@@ -225,8 +225,9 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
 .drop-hl.show { opacity: 1; }
 
 /*
- * Win counter above New deal, between the stock (or emblem) and the foundations. The grid's one column is as wide
- * as the wider of the two, and both stretch to it. Labels and digits are one line (1em) tall, image or text.
+ * Win counter above New deal, between the stock (or emblem) and the foundations; on phones in a row of their own
+ * beside the emblem. The grid's one column is as wide as the wider of the two, and both stretch to it. Labels and
+ * digits are one line (1em) tall, image or text.
  */
 .controls {
   display: grid;
@@ -234,7 +235,7 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   gap: 0.3em;
   font-size: calc(var(--cw) * 0.21);
 }
-.board[data-mode="narrow"] .controls { font-size: calc(var(--cw) * 0.18); }
+.board[data-mode="narrow"] .controls { font-size: calc(var(--cw) * 0.3); }
 .board[data-mode="narrow"] .controls .btn { padding: 0.3em 0.5em; }
 .wins, .btn.deal, .btn.cascade { display: flex; align-items: center; justify-content: center; }
 .wins { gap: 0.25em; color: var(--text-muted); white-space: nowrap; }

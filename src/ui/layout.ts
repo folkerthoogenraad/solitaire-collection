@@ -8,6 +8,13 @@ const MIN_FAN = 0.34;
 export const MAX_CARD_W = { wide: 150, narrow: 110 };
 /** Narrowest the controls get (× card width) before the emblem gives way. */
 const MIN_CONTROLS_W = 1.5;
+/**
+ * Narrow mode, × card width: the emblem and controls row, the gap below it (room for a foundation's lifted base
+ * card), and the gap between bands.
+ */
+const HEADER_H = 1.1;
+const PILE_ROW_GAP = 0.3;
+const BAND_GAP = 0.25;
 
 export interface Rect {
   x: number;
@@ -56,28 +63,36 @@ export function fanFor(layout: Layout, pile: PileId, count: number): number {
   return Math.max(Math.min(layout.fan, room / (count - 1)), layout.cardW * 0.12);
 }
 
-function topRow(
+/** Stock at the left end of the row, foundations at the right. */
+function pileRow(
   variant: Variant,
   left: number,
   right: number,
   y: number,
   cw: number,
-  scale: number,
   gap: number,
   slots: Record<PileId, Slot>,
+): void {
+  const f = variant.foundationCount;
+  slots[STOCK] = { x: left, y, scale: 1 };
+  for (let i = 0; i < f; i++) {
+    slots[foundationId(i)] = { x: right - (f - i) * cw - (f - 1 - i) * gap, y, scale: 1 };
+  }
+}
+
+/**
+ * The emblem at `x`, `h` tall unless that squeezes the controls, which fill the rest of the room up to `end`.
+ * `emblemAr`: width / height of the emblem, if there is one.
+ */
+function emblemAndControls(
+  x: number,
+  end: number,
+  y: number,
+  h: number,
+  cw: number,
+  gap: number,
   emblemAr: number | undefined,
 ): { controls: Rect; emblem?: Rect } {
-  const w = cw * scale;
-  const h = w * CARD_RATIO;
-  const f = variant.foundationCount;
-  slots[STOCK] = { x: left, y, scale };
-  for (let i = 0; i < f; i++) {
-    slots[foundationId(i)] = { x: right - (f - i) * w - (f - 1 - i) * gap, y, scale };
-  }
-  // The emblem sits next to the stock, as tall as it unless that squeezes the controls, which fill the rest of
-  // the gap up to the first foundation.
-  let x = left + w + gap;
-  const end = slots[foundationId(0)]!.x - gap;
   let emblem: Rect | undefined;
   if (emblemAr) {
     const ew = Math.min(h * emblemAr, end - x - gap - cw * MIN_CONTROLS_W);
@@ -105,7 +120,9 @@ function wideLayout(width: number, height: number, variant: Variant, emblemAr: n
 
   const slots: Record<PileId, Slot> = {};
   const bottom: Record<PileId, number> = {};
-  const top = topRow(variant, left, left + total, pad, cw, 1, gap, slots, emblemAr);
+  pileRow(variant, left, left + total, pad, cw, gap, slots);
+  // The emblem and controls sit between the stock and the first foundation.
+  const top = emblemAndControls(left + cw + gap, slots[foundationId(0)]!.x - gap, pad, ch, cw, gap, emblemAr);
 
   const y = pad + ch + cw * 0.3;
   for (let i = 0; i < n; i++) {
@@ -120,10 +137,10 @@ function narrowLayout(width: number, height: number, variant: Variant, emblemAr:
   const perBand = Math.ceil(n / 2);
   const pad = 8;
   const gapR = 0.09;
-  const topScale = 0.8;
   const byWidth = (width - 2 * pad) / (perBand + (perBand - 1) * gapR);
-  // Top row plus two bands, each fitting a 7-card column at minimum fan.
-  const byHeight = (height - 2 * pad) / (CARD_RATIO * topScale + 0.5 + 2 * (CARD_RATIO + 6 * MIN_FAN));
+  // Header, the stock and foundations, then two bands, each fitting a 7-card column at minimum fan.
+  const byHeight =
+    (height - 2 * pad) / (HEADER_H + PILE_ROW_GAP + CARD_RATIO + 2 * BAND_GAP + 2 * (CARD_RATIO + 6 * MIN_FAN));
   const cw = Math.max(Math.min(byWidth, byHeight, MAX_CARD_W.narrow), 10);
   const ch = cw * CARD_RATIO;
   const gap = cw * gapR;
@@ -132,10 +149,13 @@ function narrowLayout(width: number, height: number, variant: Variant, emblemAr:
 
   const slots: Record<PileId, Slot> = {};
   const bottom: Record<PileId, number> = {};
-  const top = topRow(variant, left, left + total, pad, cw, topScale, gap * 0.8, slots, emblemAr);
+  // Emblem and controls get a row of their own, so both can be large enough to read and tap.
+  const top = emblemAndControls(left, left + total, pad, cw * HEADER_H, cw, gap, emblemAr);
+  const pileY = pad + cw * (HEADER_H + PILE_ROW_GAP);
+  pileRow(variant, left, left + total, pileY, cw, gap, slots);
 
-  const bandGap = cw * 0.25;
-  const band1 = pad + ch * topScale + bandGap;
+  const bandGap = cw * BAND_GAP;
+  const band1 = pileY + ch + bandGap;
   const bandH = (height - pad - band1 - bandGap) / 2;
   const band2 = band1 + bandH + bandGap;
   const shift = ((perBand - (n - perBand)) * (cw + gap)) / 2;
