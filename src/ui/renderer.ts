@@ -10,6 +10,8 @@ export interface CardPos {
   scale: number;
   z: number;
   compact: boolean;
+  /** Degrees, about the card's top-left corner. */
+  rotate: number;
 }
 
 export interface RenderOptions {
@@ -27,12 +29,19 @@ export const DEAL_STAGGER_MS = 50;
 const DEAL_MS = 320;
 const RAISED_Z = 500;
 const DRAG_Z = 1000;
+/**
+ * A foundation that doesn't start at the lowest rank shows its base card's index, otherwise you can't tell where the
+ * pile starts: the base card tilts about its top-right corner and lifts, the cards on it drop (both × card width).
+ * Split between up and down because phones have only a few pixels above the top row.
+ */
+const PEEK = { rotate: 5, lift: 0.12, drop: 0.1 };
 /** Size of a dragged card relative to resting; depth comes from the lifted shadow instead. */
 export const DRAG_SCALE = 1;
 
 /** Snaps to device pixels: a card on its own compositor layer at a fractional offset gets resampled and looks blurry. */
 const snap = (v: number) => Math.round(v * devicePixelRatio) / devicePixelRatio;
-const transform = (x: number, y: number, scale: number) => `translate3d(${snap(x)}px, ${snap(y)}px, 0) scale(${scale})`;
+const transform = (x: number, y: number, scale: number, rotate = 0) =>
+  `translate3d(${snap(x)}px, ${snap(y)}px, 0)${rotate ? ` rotate(${rotate}deg)` : ''} scale(${scale})`;
 
 function div(className: string): HTMLDivElement {
   const el = document.createElement('div');
@@ -162,7 +171,7 @@ export class Renderer {
   dragTo(ids: readonly string[], dx: number, dy: number): void {
     for (const id of ids) {
       const p = this.pos.get(id)!;
-      const t = transform(p.x + dx, p.y + dy, p.scale * DRAG_SCALE);
+      const t = transform(p.x + dx, p.y + dy, p.scale * DRAG_SCALE, p.rotate);
       this.cards.get(id)!.style.transform = t;
       this.written.set(id, t);
     }
@@ -211,7 +220,21 @@ export class Renderer {
       const tableau = pileKind(pile) === 'tableau';
       const fan = tableau ? fanFor(this.layout, pile, ids.length) : 0;
       const compact = tableau && this.layout.compact;
-      ids.forEach((id, i) => out.set(id, { x: slot.x, y: slot.y + i * fan, scale: slot.scale, z: i + 1, compact }));
+      ids.forEach((id, i) =>
+        out.set(id, { x: slot.x, y: slot.y + i * fan, scale: slot.scale, z: i + 1, compact, rotate: 0 }),
+      );
+      if (pileKind(pile) === 'foundation' && ids.length > 1 && this.variant.card(ids[0]!).rank > 0) {
+        const w = this.layout.cardW * slot.scale;
+        const a = (PEEK.rotate * Math.PI) / 180;
+        // Rotation is about the top-left corner (transform-origin); shift it to pivot on the top-right one.
+        out.set(ids[0]!, {
+          ...out.get(ids[0]!)!,
+          x: slot.x + w * (1 - Math.cos(a)),
+          y: slot.y - w * (Math.sin(a) + PEEK.lift),
+          rotate: PEEK.rotate,
+        });
+        for (const id of ids.slice(1)) out.get(id)!.y += PEEK.drop * w;
+      }
     }
     return out;
   }
@@ -219,7 +242,7 @@ export class Renderer {
   private write(id: string, p: CardPos): void {
     this.pos.set(id, p);
     const el = this.cards.get(id)!;
-    const t = transform(p.x, p.y, p.scale);
+    const t = transform(p.x, p.y, p.scale, p.rotate);
     if (this.written.get(id) !== t) {
       el.style.transform = t;
       this.written.set(id, t);
