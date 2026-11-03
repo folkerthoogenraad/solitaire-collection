@@ -12,8 +12,7 @@ export interface DragHost {
   /** Re-render the current state, raising `ids` while they travel back. */
   restore(ids: readonly string[]): void;
   /** Cards were lifted off their pile. */
-  pickUp(ids: readonly string[]): void;
-}
+  pickUp(ids: readonly string[]): void;}
 
 interface Session {
   pointerId: number;
@@ -117,7 +116,6 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
     renderer.hint(null);
-    surface.classList.remove('grabbing');
     if (!s) return;
 
     renderer.highlight(null);
@@ -141,10 +139,10 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     const ids = pile.slice(pile.indexOf(id));
 
     e.preventDefault();
-    surface.setPointerCapture(e.pointerId);
 
     // Right button only hints, until released.
     if (e.button === 2) {
+      surface.setPointerCapture(e.pointerId);
       renderer.hint(placementSource(variant, state, id));
       hintPointer = e.pointerId;
       return;
@@ -153,13 +151,14 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     renderer.hint(placementTarget(variant, state, id));
 
     if (!variant.canPickUp(state, from, ids.length)) {
+      surface.setPointerCapture(e.pointerId);
       renderer.nope(id);
       hintPointer = e.pointerId;
       return;
     }
-    // The surface holds pointer capture, so the cursor has to be set there rather than on the card.
-    // Not for touch: there's no cursor, and the class restyles every card, which re-rasters them all on Android.
-    if (e.pointerType !== 'touch') surface.classList.add('grabbing');
+    // The grabbed card holds capture, so the cursor comes from `.card.dragging`. Setting it on the board instead
+    // restyles every card, which repaints the whole table (docs/plans/mobile-animation-jank). Events still bubble here.
+    el.setPointerCapture(e.pointerId);
     session = {
       pointerId: e.pointerId,
       from,

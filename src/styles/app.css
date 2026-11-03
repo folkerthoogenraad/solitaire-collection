@@ -101,9 +101,8 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   transition: transform var(--move-ms) var(--ease), opacity 120ms var(--move-ms);
   pointer-events: none;
 }
-.card.dragging { transition: none; }
-/* Mouse only: toggling this restyles every card, which re-rasters the whole table on Android (docs/plans/mobile-animation-jank) */
-.board.grabbing, .board.grabbing .card { cursor: grabbing; }
+/* The grabbed card holds pointer capture, so its cursor shows; never set it on the board (docs/plans/mobile-animation-jank) */
+.card.dragging { transition: none; cursor: grabbing; }
 .card.dragging::before {
   opacity: 1;
   transform: translateY(18px);
