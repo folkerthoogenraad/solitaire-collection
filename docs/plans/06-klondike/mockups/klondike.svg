@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512">
+  <!-- Placeholder for skins/<skin>/emblem/klondike.png: same 2:1 canvas as emblem/bbb.png -->
+  <g stroke="#000" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Pickaxe -->
+    <path d="M150 400 L330 150" fill="none" stroke-width="30"/>
+    <path d="M150 400 L330 150" fill="none" stroke="#c9955c" stroke-width="16"/>
+    <path d="M190 130 Q300 60 430 150 Q320 120 270 170 Q230 120 190 130 Z" fill="#9aa3ad"/>
+    <!-- Nugget -->
+    <path d="M300 370 L350 320 L430 310 L480 350 L470 410 L400 440 L320 425 Z" fill="#e8c66a"/>
+    <path d="M360 340 L400 335 L380 365 Z" fill="#fff3c4" stroke-width="6"/>
+  </g>
+  <g font-family="'Segoe Print', 'Comic Sans MS', cursive" font-weight="700" stroke="#000" stroke-linejoin="round">
+    <text x="500" y="300" font-size="140" textLength="490" lengthAdjust="spacingAndGlyphs" fill="#e8c66a" stroke-width="10" paint-order="stroke">Klondike</text>
+  </g>
+  <text x="600" y="400" font-family="'Segoe Print', 'Comic Sans MS', cursive" font-size="64" fill="#000">draw one</text>
+</svg>

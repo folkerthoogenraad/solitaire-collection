@@ -4,10 +4,10 @@ import type { DeckDefinition } from '../deck';
 export const emperorDeck: DeckDefinition = {
   id: 'emperor',
   suits: [
-    { id: 'S', name: 'spades', glyph: '♠' },
-    { id: 'H', name: 'hearts', glyph: '♥' },
-    { id: 'D', name: 'diamonds', glyph: '♦' },
-    { id: 'C', name: 'clubs', glyph: '♣' },
+    { id: 'S', name: 'spades', glyph: '♠', color: 'black' },
+    { id: 'H', name: 'hearts', glyph: '♥', color: 'red' },
+    { id: 'D', name: 'diamonds', glyph: '♦', color: 'red' },
+    { id: 'C', name: 'clubs', glyph: '♣', color: 'black' },
   ],
   ranks: [
     { id: 'A', label: 'A' },

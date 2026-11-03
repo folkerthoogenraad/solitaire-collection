@@ -1,5 +1,5 @@
 import { buildCards } from '../core/deck';
-import { pileKind, STOCK, tableauId, type GameState, type PileId } from '../core/state';
+import { downCount, pileKind, STOCK, type GameState, type PileId } from '../core/state';
 import type { Variant } from '../core/variant';
 import type { CardFaceRenderer } from './faces';
 import { fanFor, type Layout, type Rect } from './layout';
@@ -12,6 +12,8 @@ export interface CardPos {
   compact: boolean;
   /** Degrees, about the card's top-left corner. */
   rotate: number;
+  /** Lying face down: the back shows. */
+  down: boolean;
 }
 
 export interface RenderOptions {
@@ -27,6 +29,8 @@ export interface RenderOptions {
 const MOVE_MS = 400;
 export const DEAL_STAGGER_MS = 50;
 const DEAL_MS = 320;
+/** Dealt cards stack above whatever stays in the stock, in deal order. */
+const DEAL_Z = 100;
 const RAISED_Z = 500;
 const DRAG_Z = 1000;
 /**
@@ -64,6 +68,8 @@ export class Renderer {
   private dividers: HTMLElement[] = [];
   private highlightEl = div('drop-hl');
   private raised = new Map<string, number>();
+  /** Timer that ends the deal; the board's `dealing` class is shared with whatever game comes next. */
+  private dealing = 0;
 
   constructor(
     private board: HTMLElement,
@@ -74,6 +80,7 @@ export class Renderer {
   ) {
     for (const id of variant.piles()) {
       const slot = div('slot');
+      slot.dataset.pile = id;
       if (id === STOCK) {
         slot.classList.add('stock');
         const label = div('slot-label');
@@ -87,7 +94,7 @@ export class Renderer {
     for (const c of buildCards(variant.deck)) {
       const el = div('card');
       el.dataset.id = c.id;
-      el.append(faces.render(c, variant.deck));
+      el.append(faces.render(c, variant.deck), faces.back());
       this.cards.set(c.id, el);
       this.layer.append(el);
     }
@@ -95,6 +102,14 @@ export class Renderer {
     board.append(this.layer);
     board.style.setProperty('--move-ms', `${MOVE_MS}ms`);
     board.style.setProperty('--deal-ms', `${DEAL_MS}ms`);
+  }
+
+  /** Takes the cards and chrome off the board, and leaves the board's classes as a fresh renderer expects them. */
+  destroy(): void {
+    clearTimeout(this.dealing);
+    for (const timer of this.raised.values()) clearTimeout(timer);
+    this.board.classList.remove('dealing');
+    this.layer.remove();
   }
 
   setLayout(layout: Layout): void {
@@ -117,6 +132,7 @@ export class Renderer {
 
     const c = layout.controls;
     Object.assign(this.controls.style, { width: `${c.w}px`, height: `${c.h}px`, transform: transform(c.x, c.y, 1) });
+    this.controls.style.fontSize = layout.controlsFont ? `calc(var(--cw) * ${layout.controlsFont})` : '';
 
     const e = layout.emblem;
     if (this.emblem) this.emblem.hidden = !e;
@@ -130,7 +146,7 @@ export class Renderer {
     if (opts.deal) return this.deal(state, next);
 
     if (opts.instant) this.board.classList.add('no-anim');
-    for (const [id, p] of next) this.write(id, p);
+    for (const [id, p] of next) this.write(id, p, !opts.instant);
     if (opts.instant) {
       void this.layer.offsetWidth;
       this.board.classList.remove('no-anim');
@@ -218,11 +234,14 @@ export class Renderer {
       const ids = state.piles[pile] ?? [];
       const slot = this.layout.slots[pile]!;
       const tableau = pileKind(pile) === 'tableau';
-      const fan = tableau ? fanFor(this.layout, pile, ids.length) : 0;
+      const down = downCount(state, pile);
+      const fan = tableau ? fanFor(this.layout, pile, ids.length, down) : 0;
+      const downFan = tableau ? this.layout.downFan : 0;
       const compact = tableau && this.layout.compact;
-      ids.forEach((id, i) =>
-        out.set(id, { x: slot.x, y: slot.y + i * fan, scale: slot.scale, z: i + 1, compact, rotate: 0 }),
-      );
+      ids.forEach((id, i) => {
+        const y = slot.y + Math.min(i, down) * downFan + Math.max(i - down, 0) * fan;
+        out.set(id, { x: slot.x, y, scale: slot.scale, z: i + 1, compact, rotate: 0, down: i < down });
+      });
       if (pileKind(pile) === 'foundation' && ids.length > 1 && this.variant.card(ids[0]!).rank > 0) {
         const w = this.layout.cardW * slot.scale;
         const a = (PEEK.rotate * Math.PI) / 180;
@@ -239,9 +258,14 @@ export class Renderer {
     return out;
   }
 
-  private write(id: string, p: CardPos): void {
-    this.pos.set(id, p);
+  /** `animate`: a card turning face up flips over. */
+  private write(id: string, p: CardPos, animate = false): void {
     const el = this.cards.get(id)!;
+    const was = this.pos.get(id);
+    this.pos.set(id, p);
+    // Only this card's class changes, never the board's (docs/plans/mobile-animation-jank).
+    el.classList.toggle('down', p.down);
+    if (animate && was?.down && !p.down) this.replayClass(el, 'flip');
     const t = transform(p.x, p.y, p.scale, p.rotate);
     if (this.written.get(id) !== t) {
       el.style.transform = t;
@@ -267,11 +291,17 @@ export class Renderer {
 
   private deal(state: GameState, next: Map<string, CardPos>): void {
     const stock = this.layout.slots[STOCK]!;
-    const order = this.dealOrder(state);
+    const order = new Map(this.variant.dealOrder(state).map((id, i) => [id, i]));
+    // Deal order is also a valid stacking order within each column, and keeps later cards on top in flight.
+    // Cards that aren't dealt (Klondike's stock) keep their pile's order, under the ones flying out.
+    const z = (id: string, p: CardPos) => {
+      const o = order.get(id);
+      return o === undefined ? p.z : DEAL_Z + o;
+    };
 
     this.board.classList.add('no-anim');
     for (const [id, p] of next) {
-      this.write(id, { ...p, x: stock.x, y: stock.y, scale: stock.scale, z: (order.get(id) ?? 0) + 1 });
+      this.write(id, { ...p, x: stock.x, y: stock.y, scale: stock.scale, z: z(id, p) });
     }
     void this.layer.offsetWidth;
     this.board.classList.remove('no-anim');
@@ -281,22 +311,12 @@ export class Renderer {
       const el = this.cards.get(id)!;
       el.style.transitionDelay = `${(order.get(id) ?? 0) * DEAL_STAGGER_MS}ms`;
       this.write(id, p);
-      // Deal order is also a valid stacking order within each column, and keeps later cards on top in flight.
-      el.style.zIndex = String((order.get(id) ?? 0) + 1);
+      el.style.zIndex = String(z(id, p));
     }
-    window.setTimeout(() => {
+    clearTimeout(this.dealing);
+    this.dealing = window.setTimeout(() => {
       this.board.classList.remove('dealing');
       for (const el of this.cards.values()) el.style.transitionDelay = '';
-    }, next.size * DEAL_STAGGER_MS + DEAL_MS);
-  }
-
-  /** Round-robin order the cards were dealt in, so they fly out like a real deal. */
-  private dealOrder(state: GameState): Map<string, number> {
-    const order = new Map<string, number>();
-    const columns = this.variant.tableauCount;
-    for (let c = 0; c < columns; c++) {
-      (state.piles[tableauId(c)] ?? []).forEach((id, k) => order.set(id, k * columns + c));
-    }
-    return order;
+    }, order.size * DEAL_STAGGER_MS + DEAL_MS);
   }
 }

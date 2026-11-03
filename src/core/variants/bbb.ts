@@ -1,7 +1,7 @@
 import { buildCards, type Card } from '../deck';
 import { emperorDeck } from '../decks/emperor';
 import { createRng, shuffle } from '../rng';
-import { foundationId, pileKind, STOCK, tableauId, type Move, type PileId } from '../state';
+import { applyMove, foundationId, pileKind, STOCK, tableauId, type GameState, type Move, type PileId } from '../state';
 import { cardIndex, type Variant } from '../variant';
 
 const TABLEAU = 11;
@@ -29,13 +29,29 @@ function isRun(ids: string[]): boolean {
   return true;
 }
 
+/** Card of the same suit as `id`, `offset` ranks away, wherever it is buried. */
+function sameSuitCard(state: GameState, id: string, offset: number, tableauOnly: boolean): string | null {
+  const ref = card(id);
+  for (const pile of bbb.piles()) {
+    if (tableauOnly && pileKind(pile) !== 'tableau') continue;
+    const match = state.piles[pile]!.find((other) => {
+      const c = card(other);
+      return c.suit === ref.suit && c.rank === ref.rank + offset;
+    });
+    if (match) return match;
+  }
+  return null;
+}
+
 /** "Bobbie's Beautiful Bugs": everything dealt face up, build down by suit, foundations A → E by suit. */
 export const bbb: Variant = {
   id: 'bbb',
+  name: "Bobbie's Beautiful Bugs",
   deck,
   tableauCount: TABLEAU,
   foundationCount: FOUNDATIONS,
   hasStock: true,
+  hasWaste: false,
 
   piles() {
     return [
@@ -56,6 +72,19 @@ export const bbb: Variant = {
     return { seed, piles, started: false, won: false };
   },
 
+  /** Round-robin, like the deal itself. */
+  dealOrder(state) {
+    const order: string[] = [];
+    const rows = Math.max(...Array.from({ length: TABLEAU }, (_, c) => state.piles[tableauId(c)]?.length ?? 0));
+    for (let k = 0; k < rows; k++) {
+      for (let c = 0; c < TABLEAU; c++) {
+        const id = state.piles[tableauId(c)]?.[k];
+        if (id) order.push(id);
+      }
+    }
+    return order;
+  },
+
   canPickUp(state, pile, count) {
     const ids = state.piles[pile];
     if (!ids || count < 1 || count > ids.length) return false;
@@ -65,6 +94,7 @@ export const bbb: Variant = {
       case 'foundation':
         return count === 1;
       case 'stock':
+      case 'waste':
         return false;
     }
   },
@@ -82,9 +112,20 @@ export const bbb: Variant = {
         if (move.count !== 1) return false;
         return !target || (target.suit === moving.suit && target.rank === moving.rank - 1);
       case 'stock':
+      case 'waste':
         return false;
     }
   },
+
+  apply: applyMove,
+
+  tap: () => null,
+
+  /** The tableau card of the same suit, one rank higher. */
+  hintTarget: (state, id) => sameSuitCard(state, id, 1, true),
+
+  /** The card of the same suit, one rank lower, wherever it is. */
+  hintSource: (state, id) => sameSuitCard(state, id, -1, false),
 
   isWon(state) {
     for (let i = 0; i < TABLEAU; i++) if (state.piles[tableauId(i)]?.length) return false;

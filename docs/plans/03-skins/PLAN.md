@@ -11,7 +11,7 @@ Correct these if any are wrong.
 - **Filenames use rank labels and suit names**: `10-hearts.png`, not `TH.png`. Labels must be unique within a deck.
 - **Skins are deck-agnostic.** Ranks and suits resolve by name, so a future deck with extra ranks gets the fallbacks automatically.
 - **The index (corner) position stays in CSS.** Only its glyphs are skinnable. Moving the index is out of scope, because compact fans depend on it.
-- **No card backs.** Every card is dealt face up, so `card/back.png` is reserved but not rendered.
+- **No card backs.** Every card is dealt face up, so `card/back.png` is reserved but not rendered. (Superseded by [06-klondike](../06-klondike/PLAN.md): backs are rendered now.)
 
 ## 2. Folder layout and discovery
 

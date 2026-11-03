@@ -126,6 +126,39 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   background: var(--card-hint-bg);
   box-shadow: 0 1px 2px var(--card-shadow), inset 0 0 0 2px var(--card-hint-ring);
 }
+/*
+ * Back: every card has one, shown instead of the face while the card has `.down`. The skin's card/back (ink tinted
+ * with --card-back), or a pattern, under the face's outline.
+ */
+.back {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--card-back-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 1px 2px var(--card-shadow);
+  color: var(--card-back);
+}
+.card.down > .back { display: block; }
+.card.down > .face { display: none; }
+.card.down { cursor: default; }
+.back > .pattern {
+  position: absolute;
+  inset: calc(var(--cw) * 0.08);
+  border-radius: calc(var(--radius) * 0.6);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 calc(var(--cw) * 0.035), var(--card-back-pattern) 0 calc(var(--cw) * 0.07)),
+    repeating-linear-gradient(-45deg, var(--card-back) 0 calc(var(--cw) * 0.035), var(--card-back-pattern) 0 calc(var(--cw) * 0.07));
+  box-shadow: inset 0 0 0 calc(var(--cw) * 0.015) var(--card-back);
+}
+/* Turning face up: the face unfolds from the middle */
+.card.flip .face { animation: flip 220ms var(--ease); }
+@keyframes flip {
+  from { transform: scaleX(0); }
+}
+
 .face[data-suit="spades"] { color: var(--suit-spades); }
 .face[data-suit="hearts"] { color: var(--suit-hearts); }
 .face[data-suit="diamonds"] { color: var(--suit-diamonds); }
@@ -181,9 +214,20 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   width: var(--center-w);
   height: var(--center-h);
 }
-/* The variant's emblem, next to the stock (only when the skin has one); sized by the layout */
+/* The variant's emblem, next to the stock; sized by the layout. It opens the variant selector. */
 .g.emblem { position: absolute; left: 0; top: 0; transform-origin: 0 0; color: var(--emblem); }
 .g.emblem[hidden] { display: none; }
+.g.emblem.opens-selector { cursor: pointer; outline: none; transition: filter 120ms; }
+.g.emblem.opens-selector:hover { filter: brightness(1.12); }
+.g.emblem.opens-selector:focus-visible { filter: drop-shadow(0 0 4px var(--drop-highlight)); }
+/* No image: the variant's name */
+.layer > .g.emblem.text {
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cw) * 0.2);
+  font-weight: 700;
+  line-height: 1.1;
+}
 
 .center > .art { position: absolute; inset: 0; height: auto; aspect-ratio: auto; }
 .center > .art.text { display: grid; place-items: center; font-size: calc(var(--cw) * 0.4); font-weight: 800; }
@@ -370,6 +414,14 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   box-shadow: none;
 }
 .board[data-skin-shape] .face::before { content: ""; position: absolute; background: var(--card-bg); transition: background-color 120ms; }
+.board[data-skin-shape] .back { overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.board[data-skin-shape] .back::before {
+  content: "";
+  position: absolute;
+  inset: var(--body-inset);
+  background: var(--card-back-bg);
+  mask: var(--skin-shape) center / 100% 100% no-repeat;
+}
 .board[data-skin-shape] .card.hint .face::before { background: var(--card-hint-bg); }
 .board[data-skin-shape] .card::before,
 .board[data-skin-shape] .face::before,
@@ -400,8 +452,83 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
   border-image: var(--skin-panel) var(--skin-panel-slice) fill / calc(var(--skin-panel-slice) * 1px / 3) stretch;
 }
 
+/*
+ * Variant selector: full screen over the board (a sibling of it), revealed by a circle growing from the centre of the
+ * screen. --r (set from JS) is large enough to cover the screen; --selector-ms is the circle's duration.
+ * The outer element is unclipped and catches every tap while the selector is up. Chrome's hit testing can keep using a
+ * stale clip after a clip-path transition, which let taps through to the board, so the clip also goes once the circle
+ * is all the way out (`.shown`) and comes back just before it shrinks.
+ */
+.selector { position: fixed; inset: 0; z-index: 2500; }
+.selector[hidden] { display: none; }
+.sel-reveal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: var(--selector-bg);
+  color: var(--selector-text);
+  clip-path: circle(0 at 50% 50%);
+  transition: clip-path var(--selector-ms) var(--ease);
+}
+.selector.open .sel-reveal { clip-path: circle(var(--r) at 50% 50%); }
+.selector.shown .sel-reveal { clip-path: none; }
+.selector[data-motion="reduced"] .sel-reveal { clip-path: none; opacity: 0; transition: opacity 150ms; }
+.selector[data-motion="reduced"].open .sel-reveal { opacity: 1; }
+
+/* Two columns, one on phones. The buttons settle in once most of the circle is out. */
+.sel-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+  width: min(1040px, 100%);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 200ms, transform 200ms var(--ease);
+}
+.selector.open .sel-list {
+  opacity: 1;
+  transform: none;
+  transition: opacity 300ms calc(var(--selector-ms) * 0.35), transform 400ms var(--ease) calc(var(--selector-ms) * 0.35);
+}
+.selector[data-motion="reduced"] .sel-list { transform: none; transition: none; }
+
+/* One big button per variant: the emblem, and the win counter to its right ("Wins" over the count) */
+.sel-variant {
+  --eh: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 0;
+  padding: 24px 32px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  font: inherit;
+  font-size: 40px;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 160ms var(--ease), background-color 160ms;
+}
+.sel-variant:hover { background: var(--selector-hover); }
+.sel-variant:active { transform: scale(0.97); }
+.sel-variant:focus-visible { outline: 3px solid var(--selector-text); outline-offset: 4px; }
+.sel-variant.current { background: var(--selector-current); }
+.sel-variant .g.emblem { position: relative; --h: var(--eh); max-width: 65%; flex: 0 1 auto; color: var(--selector-text); }
+.sel-variant .g.emblem.text { --h: 0.9em; font-weight: 700; text-align: left; }
+.sel-variant .wins { flex-direction: column; flex: none; gap: 0.15em; color: var(--selector-text-muted); }
+.sel-variant .wins .count { font-size: 1.6em; color: var(--selector-text); }
+@media (max-width: 720px) {
+  .sel-list { grid-template-columns: 1fr; gap: 16px; }
+  .sel-variant { --eh: 84px; font-size: 22px; padding: 14px 18px; }
+}
+
 /* Set from the motion setting (?motion=system|full|reduced), which defaults to the OS preference */
 .board[data-motion="reduced"] .card,
 .board[data-motion="reduced"] .card::before { transition-duration: 0ms; }
 .board[data-motion="reduced"] .card.celebrate .face,
+.board[data-motion="reduced"] .card.flip .face,
 .board[data-motion="reduced"] .card.nope .face { animation: none; }

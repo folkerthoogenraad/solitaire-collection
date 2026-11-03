@@ -135,8 +135,9 @@ export function chainFor(skins: ReadonlyMap<string, SkinSource>, id: string): Sk
   return chain;
 }
 
-export function settingsFor(chain: readonly SkinSource[]): SkinSettings {
-  return mergeSettings(chain.map((s) => s.manifest).reverse());
+/** `variantId`: add each skin's block for that variant; without it, the settings every variant shares. */
+export function settingsFor(chain: readonly SkinSource[], variantId?: string): SkinSettings {
+  return mergeSettings(chain.map((s) => s.manifest).reverse(), variantId);
 }
 
 /** First skin in the chain that has any of `keys`, trying the keys in order within each skin. */
@@ -209,23 +210,40 @@ export function resolveChrome(chain: readonly SkinSource[]): ChromeSpec {
 }
 
 /** Images the controls and the table show as elements: see `UiAssets`. */
-export type UiKey = 'emblem' | 'wins' | 'new-deal' | 'autocascade' | 'victory' | Digit;
+export type UiKey = EmblemKey | 'wins' | 'new-deal' | 'autocascade' | 'victory' | Digit;
+/** `emblem/<variant id>`. */
+export type EmblemKey = `emblem/${string}`;
 export type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
-export type UiAssets = Record<UiKey, Asset>;
+export type UiAssets = Partial<Record<UiKey, Asset>>;
 
 export const DIGITS: readonly Digit[] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
-/** The variant's emblem, the labels of the controls and the "You won" panel, and the win counter's digits (corner index images, so 10 is 1 and 0). */
-export function resolveUi(chain: readonly SkinSource[], variantId: string): UiAssets {
-  const ui = {
-    emblem: lookup(chain, `emblem/${variantId}`),
+/**
+ * Each variant's emblem, the labels of the controls and the "You won" panel, and the win counter's digits (corner
+ * index images, so 10 is 1 and 0).
+ */
+export function resolveUi(chain: readonly SkinSource[], variantIds: readonly string[]): UiAssets {
+  const ui: UiAssets = {
     wins: lookup(chain, 'ui/wins'),
     'new-deal': lookup(chain, 'ui/new-deal'),
     autocascade: lookup(chain, 'ui/autocascade'),
     victory: lookup(chain, 'ui/victory'),
-  } as UiAssets;
+  };
+  for (const id of variantIds) ui[`emblem/${id}`] = lookup(chain, `emblem/${id}`);
   for (const d of DIGITS) ui[d] = lookup(chain, `index/${d}`);
   return ui;
+}
+
+/** The back of every card: never per suit, or it would give the card away. */
+export interface BackSpec {
+  /** Stretched over the card; ink is tinted with `--card-back`. Without it, a pattern in CSS. */
+  art: Asset;
+  /** The face's outline, so a shaped card has the same edge on both sides. */
+  outline: Asset;
+}
+
+export function resolveBack(chain: readonly SkinSource[]): BackSpec {
+  return { art: lookup(chain, 'card/back'), outline: lookup(chain, 'card/outline') };
 }
 
 /** Each sound from the first skin in the chain that has any variant of it, so a skin replaces a sound as a whole. */
@@ -242,7 +260,7 @@ export function resolveSounds(chain: readonly SkinSource[]): Partial<Record<Soun
 export function unknownFiles(skin: SkinSource, deck: DeckDefinition): string[] {
   const ranks = deck.ranks.map((r) => r.label);
   const suits = deck.suits.map((s) => s.name);
-  const any = new Set<string>(['card/background', 'card/outline', 'card/shape', 'card/drop', 'table/slot', 'table/slot-stock', 'table/stock', 'ui/wins', 'ui/new-deal', 'ui/autocascade', 'ui/victory']);
+  const any = new Set<string>(['card/background', 'card/outline', 'card/back', 'card/shape', 'card/drop', 'table/slot', 'table/slot-stock', 'table/stock', 'ui/wins', 'ui/new-deal', 'ui/autocascade', 'ui/victory']);
   for (const d of DIGITS) any.add(`index/${d}`);
   for (const s of suits) any.add(`index/${s}`).add(`pips/${s}`).add(`card/background-${s}`).add(`card/outline-${s}`);
   for (const r of ranks) {

@@ -1,5 +1,5 @@
 import type { CardFaceRenderer } from '../faces';
-import type { Asset, FaceSpec, Pip, UiAssets, UiKey } from './resolve';
+import type { Asset, BackSpec, FaceSpec, Pip, UiAssets, UiKey } from './resolve';
 
 export interface LoadedImage {
   url: string;
@@ -47,9 +47,33 @@ function pips(cls: string, points: readonly Pip[], pip: Asset, images: ReadonlyM
   return el;
 }
 
-/** Card faces built from a resolved skin: corner index, centre art or pips, optional background and outline. */
-export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: ReadonlyMap<string, LoadedImage>): CardFaceRenderer {
+const has = (a: Asset) => !!(a.ink || a.paint);
+
+/**
+ * Card faces built from a resolved skin: corner index, centre art or pips, optional background and outline. Backs are
+ * the skin's `card/back`, or a CSS pattern, under the same outline.
+ */
+export function skinFaces(
+  specs: ReadonlyMap<string, FaceSpec>,
+  backSpec: BackSpec,
+  images: ReadonlyMap<string, LoadedImage>,
+): CardFaceRenderer {
   return {
+    back() {
+      const back = document.createElement('div');
+      back.className = 'back';
+      if (has(backSpec.art)) {
+        back.append(glyph('bg', backSpec.art, images, ''));
+      } else {
+        const pattern = document.createElement('div');
+        pattern.className = 'pattern';
+        back.append(pattern);
+      }
+      if (has(backSpec.outline)) back.append(glyph('outline', backSpec.outline, images, ''));
+      return back;
+    },
+
+
     render(card, deck) {
       const spec = specs.get(card.id)!;
       const suit = deck.suits[card.suit]!;
@@ -92,7 +116,7 @@ export function skinFaces(specs: ReadonlyMap<string, FaceSpec>, images: Readonly
   };
 }
 
-/** Skin images shown outside the cards: the variant's emblem, the labels on the controls and panels, and the win counter's digits. */
+/** Skin images shown outside the cards: each variant's emblem, the labels on the controls and panels, and the win counter's digits. */
 export interface SkinUi {
   /** The skin's image for `key`, or `text` where it has none. */
   glyph(cls: string, key: UiKey, text: string): HTMLElement;
@@ -102,9 +126,9 @@ export interface SkinUi {
 
 export function skinUi(assets: UiAssets, images: ReadonlyMap<string, LoadedImage>): SkinUi {
   return {
-    glyph: (cls, key, text) => glyph(cls, assets[key], images, text),
+    glyph: (cls, key, text) => glyph(cls, assets[key] ?? {}, images, text),
     ar(key) {
-      const { ink, paint } = assets[key];
+      const { ink, paint } = assets[key] ?? {};
       return ((paint && images.get(paint)) || (ink && images.get(ink)) || undefined)?.ar;
     },
   };

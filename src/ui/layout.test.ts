@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bbb } from '../core/variants/bbb';
+import { klondike } from '../core/variants/klondike';
 import { computeLayout, fanFor } from './layout';
 
 function expectInside(width: number, height: number) {
@@ -52,5 +53,44 @@ describe('layout', () => {
     const fan = fanFor(l, 't0', 14);
     expect(l.slots.t0!.y + 13 * fan + l.cardH).toBeLessThanOrEqual(l.bottom.t0! + 0.01);
     expect(fanFor(l, 't0', 3)).toBe(l.fan);
+  });
+
+  it('compresses only the face-up cards of a column', () => {
+    const l = computeLayout(390, 760, klondike, 2);
+    const fan = fanFor(l, 't6', 19, 6);
+    expect(l.slots.t6!.y + 6 * l.downFan + 12 * fan + l.cardH).toBeLessThanOrEqual(l.bottom.t6! + 0.01);
+  });
+});
+
+describe('layout with a waste pile (Klondike)', () => {
+  function expectFits(width: number, height: number) {
+    const l = computeLayout(width, height, klondike, 2);
+    const rects = [l.controls, l.emblem!, ...Object.values(l.slots).map((s) => ({ ...s, w: l.cardW, h: l.cardH }))];
+    for (const r of rects) {
+      expect(r.x).toBeGreaterThanOrEqual(0);
+      expect(r.y).toBeGreaterThanOrEqual(0);
+      expect(r.x + r.w).toBeLessThanOrEqual(width + 0.01);
+      expect(r.y + r.h).toBeLessThanOrEqual(height + 0.01);
+    }
+    return l;
+  }
+
+  it('puts the waste next to the stock and the emblem over the controls on a laptop', () => {
+    const l = expectFits(1366, 650);
+    expect(l.mode).toBe('wide');
+    expect(l.slots.waste!.x).toBeGreaterThan(l.slots.stock!.x + l.cardW);
+    expect(l.slots.waste!.y).toBe(l.slots.stock!.y);
+    expect(l.emblem!.x).toBeGreaterThan(l.slots.waste!.x + l.cardW);
+    expect(l.controls.y).toBeGreaterThanOrEqual(l.emblem!.y + l.emblem!.h);
+    expect(l.controls.x + l.controls.w).toBeLessThan(l.slots.f0!.x);
+  });
+
+  it('uses the phone layout in portrait, columns in one band', () => {
+    const l = expectFits(390, 760);
+    expect(l.mode).toBe('narrow');
+    expect(l.dividers).toEqual([]);
+    expect(l.slots.t6!.y).toBe(l.slots.t0!.y);
+    expect(l.emblem!.y + l.emblem!.h).toBeLessThan(l.slots.stock!.y);
+    expect(l.cardW).toBeGreaterThan(45);
   });
 });

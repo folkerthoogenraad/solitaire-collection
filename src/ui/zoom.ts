@@ -2,7 +2,7 @@
 const DOUBLE_TAP_MS = 350;
 
 /** Elements that need the click a touch synthesizes, so their touchstart can't be cancelled. */
-const CLICKABLE = 'button, a, input, select, textarea, label';
+const CLICKABLE = 'button, [role="button"], a, input, select, textarea, label';
 
 /**
  * Keep the page at 100%. iPad Safari doesn't fully honour `touch-action: none`: a long press followed by another tap,

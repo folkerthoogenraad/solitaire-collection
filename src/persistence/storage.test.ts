@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { bbb } from '../core/variants/bbb';
+import { klondike } from '../core/variants/klondike';
 import { isValidGame, load, save } from './storage';
 
 class MemoryStorage {
@@ -41,5 +42,29 @@ describe('storage', () => {
     const game = bbb.deal(5);
     game.piles.t0 = [];
     expect(isValidGame(game, bbb)).toBe(false);
+  });
+
+  it('keeps a game and wins per variant', () => {
+    const b = bbb.deal(5);
+    const k = klondike.deal(6);
+    save(bbb, b, { wins: 3 });
+    save(klondike, k, { wins: 1 });
+    expect(load(bbb)).toEqual({ game: b, stats: { wins: 3 } });
+    expect(load(klondike)).toEqual({ game: k, stats: { wins: 1 } });
+  });
+
+  it('rejects more face-down cards than a pile has', () => {
+    const game = klondike.deal(6);
+    expect(isValidGame(game, klondike)).toBe(true);
+    expect(isValidGame({ ...game, down: { ...game.down, t0: 2 } }, klondike)).toBe(false);
+    expect(isValidGame({ ...game, down: { ...game.down, t3: -1 } }, klondike)).toBe(false);
+  });
+
+  it('moves a version 1 save to its variant', () => {
+    const game = bbb.deal(5);
+    localStorage.setItem('solitaire.save', JSON.stringify({ version: 1, variant: 'bbb', game, stats: { wins: 7 } }));
+    expect(load(klondike)).toEqual({ game: null, stats: { wins: 0 } });
+    expect(load(bbb)).toEqual({ game, stats: { wins: 7 } });
+    expect(localStorage.getItem('solitaire.save')).toBeNull();
   });
 });

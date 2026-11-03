@@ -7,7 +7,7 @@ import { loadSkin } from '../src/ui/skin/load';
 
 const deck = bbb.deck;
 const [wide, narrow] = document.querySelectorAll<HTMLElement>('.board');
-const skin = await loadSkin(bbb, wide!, new URLSearchParams(location.search).get('skin') ?? undefined);
+const skin = await loadSkin([bbb], wide!, new URLSearchParams(location.search).get('skin') ?? undefined);
 
 // Picking a skin reloads with ?skin=<id>, so the URL can be copied; the link opens the game with the same parameter.
 const picker = document.querySelector<HTMLSelectElement>('#skin')!;

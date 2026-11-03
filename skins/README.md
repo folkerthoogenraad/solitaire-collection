@@ -20,7 +20,7 @@ The browser console lists any file the game doesn't recognise (usually a typo in
 
 Suits: `spades` `hearts` `diamonds` `clubs`
 
-Ranks: `A` `2` `3` `4` `5` `6` `7` `8` `9` `10` `J` `Q` `K` `E`
+Ranks: `A` `2` `3` `4` `5` `6` `7` `8` `9` `10` `J` `Q` `K` `E` (`E`, the Emperor, is only in Bobbie's Beautiful Bugs)
 
 Formats: `.png`, `.webp` or `.svg` for images; `.wav`, `.mp3` or `.ogg` for sounds.
 
@@ -109,6 +109,7 @@ The suit symbols placed by a pip layout, and the single large pip.
 | `card/shape.png` | 360 × 504 px × `card.scale` | Optional: the card's outline shape, replacing the rounded corners. Only the alpha is used |
 | `card/outline.ink.png` | same as the shape, or 360 × 504 px without one | Optional: drawn over the background. Ink is tinted with `card-border`; `outline.png` is shown as drawn |
 | `card/outline-{suit}.png` | same | Optional: one suit only |
+| `card/back.ink.png` / `card/back.png` | 360 × 504 px (× `card.scale` with a shape) | Optional: the back of a face-down card (Klondike), stretched over the card like the background, under `card/outline`. Ink is tinted with `card-back`. There's no per-suit back: it would give the card away. Without it, the back is a pattern in `card-back` and `card-back-pattern` on `card-back-bg` |
 | `card/drop.ink.png` / `card/drop.png` | 360 × 504 px × `dropScale` | Optional: shown over the card (or empty pile) a dragged card will land on, instead of the glow. Ink is tinted with `drop-highlight`. It reaches past the card by `card.dropScale` (the same as `card.scale` unless set), so you can draw a glow or a frame around the card |
 
 #### Shaped cards
@@ -127,7 +128,7 @@ A hand-drawn edge eats into the card: if the wobbles have to stay inside 360 × 
 | `table/slot.ink.png` / `table/slot.png` | 360 × 504 px (× `slotScale`) | Empty pile. Ink is tinted with `slot-border` |
 | `table/slot-stock.ink.png` / `table/slot-stock.png` | 360 × 504 px (× `slotScale`) | Optional: the empty stock's own outline. Without it, the stock uses `table/slot`. With it, the "Stock" text is left out, so either draw the word in, or add `table/stock` |
 | `table/stock.ink.png` / `table/stock.png` | 240 × 96 px (any size) | The "Stock" label alone, without the outline: just the word. Shown at its own size (a 360 px wide image is as wide as the pile), centred on the stock over its outline. Ink is tinted with `slot-label` |
-| `emblem/{variant}.png` | 360 × 504 px (any width) | Shown next to the stock, as tall as it. One per game: `emblem/bbb.png` for this one. Ink is tinted with `emblem`. Without it there's no emblem. On a phone it's shrunk when the controls would get too cramped |
+| `emblem/{variant}.png` | 360 × 504 px (any width) | The game's emblem: next to the stock (Klondike: over the controls), and on its button in the game selector, which opens when you tap it. One per game: `emblem/bbb.png` and `emblem/klondike.png`. Ink is tinted with `emblem` on the table and `selector-text` in the selector. Without it, the game's name is shown instead. On a phone it's shrunk when the controls would get too cramped |
 
 ### Controls
 
@@ -155,7 +156,7 @@ Draw the labels like the corner index: the full height is used, so keep some spa
 | `sounds/cancel.wav` | Optional: a card you picked up goes back where it was (dropped where it doesn't fit, or not moved). Silent without it |
 | `sounds/shuffle.wav` | New deal |
 | `sounds/deal.wav` | New deal: for each card as it flies out (at most every 50 ms), a little quieter |
-| `sounds/draw.wav` | Not used yet: for games that draw from the stock |
+| `sounds/draw.wav` | A card is drawn from the stock, or the waste is turned back over (Klondike) |
 
 Add numbered files for variety, e.g. `sounds/place-2.wav` and `sounds/place-3.wav`: each time, one of them is picked at random. A skin with any file for a sound replaces all of that sound's files from the skin it extends. `classic` has all of them but `cancel`, so every skin has sound unless it brings its own.
 
@@ -230,6 +231,8 @@ Set colours in `"colors"`, by name, with any CSS colour as the value: `"#a33"`, 
 | `card-lifted-shadow` | The shadow under a card you're dragging; also under the autocascade button and the "You won" panel |
 | `card-hint-bg` | A card's colour while it's the place the card you're holding belongs |
 | `card-hint-ring` | The inner ring on that same card (not with a shape) |
+| `card-back-bg` | The back of a face-down card. Same as `card-bg` unless set |
+| `card-back` `card-back-pattern` | The pattern on the back, or `card/back.ink.png` (`card-back`) |
 | **Suits** | |
 | `suit-spades` `suit-hearts` `suit-diamonds` `suit-clubs` | Everything drawn as ink on a card of that suit: corner index, pips, `.ink` centre art and backgrounds |
 | **Table** | |
@@ -242,11 +245,33 @@ Set colours in `"colors"`, by name, with any CSS colour as the value: `"#a33"`, 
 | **Controls** | |
 | `btn-bg` `btn-text` | Buttons (when there's no `ui/button.png`); `btn-text` also tints `ui/new-deal.ink.png` and `ui/autocascade.ink.png` |
 | `text` `text-muted` | The win counter: number and label (also their `.ink` images) |
+| **Game selector** | |
+| `selector-bg` | The screen behind the games |
+| `selector-text` `selector-text-muted` | The win count and "Wins" on each game's button (also their `.ink` images), and ink emblems |
+| `selector-hover` `selector-current` | A button under the mouse, and the button of the game you're playing |
 | **"You won"** | |
 | `win-backdrop` | The dimming over the table |
 | `win-panel-bg` `win-panel-text` | The panel (when there's no `ui/panel.png`) and its text, including `ui/victory.ink.png` |
 
 The defaults are in `src/styles/theme.css`.
+
+### Per game
+
+Each game can get its own colours, in `"variants"`, under the game's id (`bbb` for Bobbie's Beautiful Bugs, `klondike`). A game's colours go on top of the skin's own, so list only what changes. Klondike needs two clearly red and two clearly black suits, where Bobbie's Beautiful Bugs plays fine with four colours:
+
+```jsonc
+{
+  "colors": { "card-bg": "#ffffe5" },        // every game
+  "variants": {
+    "bbb":      { "colors": { "suit-spades": "#215b7d", "suit-hearts": "#c12f2f", "suit-diamonds": "#bd8d34", "suit-clubs": "#294123" } },
+    "klondike": { "colors": { "suit-spades": "#1d1d1d", "suit-hearts": "#c12f2f", "suit-diamonds": "#c12f2f", "suit-clubs": "#1d1d1d" } }
+  }
+}
+```
+
+With `extends`, the skin you extend is finished first, its own game colours included, and then yours go on top. So your colours always win, even over a game block in the skin you extend. If you change the suit colours, add them for `klondike` too.
+
+Only `"colors"` works per game so far; anything else in a game's block is reported as an unknown setting.
 
 ### Pip layouts
 

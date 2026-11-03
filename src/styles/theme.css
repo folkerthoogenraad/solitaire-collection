@@ -35,6 +35,18 @@
   --emblem: var(--text-muted);
   --drop-highlight: #b3a77b;
 
+  /* Card backs: the body, and the pattern drawn on it when the skin has no card/back image (or the tint of its ink) */
+  --card-back-bg: var(--card-bg);
+  --card-back: #215b7d;
+  --card-back-pattern: #2c7099;
+
+  /* Variant selector */
+  --selector-bg: #000;
+  --selector-text: #fff;
+  --selector-text-muted: rgb(255 255 255 / 70%);
+  --selector-hover: rgb(255 255 255 / 6%);
+  --selector-current: rgb(255 255 255 / 10%);
+
   /* Win overlay */
   --win-backdrop: rgb(0 0 0 / 30%);
   --win-panel-bg: #e5ddcc;

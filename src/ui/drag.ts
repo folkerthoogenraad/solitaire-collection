@@ -12,7 +12,8 @@ export interface DragHost {
   /** Re-render the current state, raising `ids` while they travel back. */
   restore(ids: readonly string[]): void;
   /** Cards were lifted off their pile. */
-  pickUp(ids: readonly string[]): void;}
+  pickUp(ids: readonly string[]): void;
+}
 
 interface Session {
   pointerId: number;
@@ -47,28 +48,11 @@ function pileOf(state: GameState, id: string): PileId | undefined {
   return Object.keys(state.piles).find((p) => state.piles[p]!.includes(id));
 }
 
-/** Card of the same suit as `id`, `offset` ranks away, wherever it is buried. */
-function sameSuitCard(variant: Variant, state: GameState, id: string, offset: number, tableauOnly: boolean): string | null {
-  const ref = variant.card(id);
-  for (const pile of variant.piles()) {
-    if (tableauOnly && pileKind(pile) !== 'tableau') continue;
-    const match = state.piles[pile]!.find((other) => {
-      const c = variant.card(other);
-      return c.suit === ref.suit && c.rank === ref.rank + offset;
-    });
-    if (match) return match;
-  }
-  return null;
-}
-
-/** Left button: the tableau card the held card goes on. */
-const placementTarget = (variant: Variant, state: GameState, id: string) => sameSuitCard(variant, state, id, 1, true);
-/** Right button: the card that goes on the held card. */
-const placementSource = (variant: Variant, state: GameState, id: string) => sameSuitCard(variant, state, id, -1, false);
-
-/** Pointer-event drag & drop for mouse, touch and pen through one code path. */
-export function attachDrag(surface: HTMLElement, host: DragHost): void {
+/** Pointer-event drag & drop for mouse, touch and pen through one code path. Returns a function that detaches it. */
+export function attachDrag(surface: HTMLElement, host: DragHost): () => void {
   const { renderer, variant } = host;
+  const listening = new AbortController();
+  const { signal } = listening;
   let session: Session | null = null;
   let frame = 0;
   /** Pointer that only shows a hint until released: a right-button hold, or a card that can't be picked up. */
@@ -88,6 +72,8 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     let best: PileId | null = null;
     let bestArea = 0;
     for (const pile of variant.piles()) {
+      // The stock only takes the waste back, by tapping it.
+      if (pileKind(pile) === 'stock') continue;
       if (!variant.canMove(state, { from: s.from, to: pile, count: s.ids.length })) continue;
       const area = overlap(dragged, renderer.dropRect(state, pile));
       if (area > bestArea) {
@@ -124,17 +110,26 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     if (!moved) host.restore(s.ids);
   }
 
-  surface.addEventListener('contextmenu', (e) => e.preventDefault());
+  surface.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
 
   surface.addEventListener('pointerdown', (e) => {
     if (session || hintPointer !== null || !e.isPrimary || (e.button !== 0 && e.button !== 2)) return;
-    const el = (e.target as Element).closest<HTMLElement>('.card');
-    if (!el) return;
-
-    const id = el.dataset.id!;
+    const target = e.target as Element;
+    const el = target.closest<HTMLElement>('.card');
     const state = host.state();
-    const from = pileOf(state, id);
+    const id = el?.dataset.id;
+    // A card, or an empty pile
+    const from = id ? pileOf(state, id) : target.closest<HTMLElement>('.slot')?.dataset.pile;
     if (!from) return;
+
+    // Tapping the stock draws (or turns the waste back over), on press so quick taps keep up.
+    const tap = e.button === 0 ? variant.tap(state, from) : null;
+    if (tap) {
+      e.preventDefault();
+      host.commit(tap);
+      return;
+    }
+    if (!el || !id) return;
     const pile = state.piles[from]!;
     const ids = pile.slice(pile.indexOf(id));
 
@@ -143,12 +138,12 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     // Right button only hints, until released.
     if (e.button === 2) {
       surface.setPointerCapture(e.pointerId);
-      renderer.hint(placementSource(variant, state, id));
+      renderer.hint(variant.hintSource(state, id));
       hintPointer = e.pointerId;
       return;
     }
 
-    renderer.hint(placementTarget(variant, state, id));
+    renderer.hint(variant.hintTarget(state, id));
 
     if (!variant.canPickUp(state, from, ids.length)) {
       surface.setPointerCapture(e.pointerId);
@@ -175,7 +170,7 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     renderer.beginDrag(ids);
     host.pickUp(ids);
     frame = requestAnimationFrame(update);
-  });
+  }, { signal });
 
   surface.addEventListener('pointermove', (e) => {
     const s = session;
@@ -183,7 +178,7 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
     s.dx = e.clientX - s.startX;
     s.dy = e.clientY - s.startY;
     if (!frame) frame = requestAnimationFrame(update);
-  });
+  }, { signal });
 
   function releaseHint(e: PointerEvent): boolean {
     if (e.pointerId !== hintPointer) return false;
@@ -199,10 +194,15 @@ export function attachDrag(surface: HTMLElement, host: DragHost): void {
       update();
       finish(true);
     }
-  });
+  }, { signal });
 
   surface.addEventListener('pointercancel', (e) => {
     if (releaseHint(e)) return;
     if (session && e.pointerId === session.pointerId) finish(false);
-  });
+  }, { signal });
+
+  return () => {
+    if (frame) cancelAnimationFrame(frame);
+    listening.abort();
+  };
 }

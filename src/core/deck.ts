@@ -3,6 +3,8 @@ export interface SuitDef {
   /** Used for theming (e.g. `--suit-spades`). */
   name: string;
   glyph: string;
+  /** For rules that alternate colours (Klondike), whatever colour a skin draws the suit in. */
+  color: 'red' | 'black';
 }
 
 export interface RankDef {

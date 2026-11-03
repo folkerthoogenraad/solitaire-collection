@@ -143,8 +143,8 @@ describe('index, background and chrome', () => {
       classic: { files: ['index/0.ink.png', 'index/1.ink.png', 'index/10.ink.png', 'ui/wins.png'] },
       mine: { files: ['emblem/bbb.png', 'emblem/other.png', 'index/1.png', 'ui/new-deal.ink.png', 'ui/autocascade.ink.png', 'ui/victory.png'] },
     });
-    const ui = resolveUi(chainFor(own.skins, 'mine'), 'bbb');
-    expect(ui.emblem).toEqual({ paint: '/skins/mine/emblem/bbb.png' });
+    const ui = resolveUi(chainFor(own.skins, 'mine'), ['bbb', 'klondike']);
+    expect(ui['emblem/bbb']).toEqual({ paint: '/skins/mine/emblem/bbb.png' });
     expect(ui.wins).toEqual({ paint: '/skins/classic/ui/wins.png' });
     expect(ui['new-deal']).toEqual({ ink: '/skins/mine/ui/new-deal.ink.png' });
     expect(ui.autocascade).toEqual({ ink: '/skins/mine/ui/autocascade.ink.png' });
@@ -152,7 +152,7 @@ describe('index, background and chrome', () => {
     expect(ui['0']).toEqual({ ink: '/skins/classic/index/0.ink.png' });
     expect(ui['1']).toEqual({ paint: '/skins/mine/index/1.png' });
     expect(ui['2']).toEqual({});
-    expect(resolveUi(chainFor(own.skins, 'mine'), 'klondike').emblem).toEqual({});
+    expect(ui['emblem/klondike']).toEqual({});
     expect(unknownFiles(own.skins.get('mine')!, deck)).toEqual([]);
   });
 
@@ -171,6 +171,29 @@ describe('index, background and chrome', () => {
     });
     expect(settingsFor(chainFor(scaled.skins, 'classic'))).toMatchObject({ card: { scale: 1 }, table: { slotScale: 1 } });
     expect(settingsFor(chainFor(scaled.skins, 'b'))).toMatchObject({ card: { scale: 1.1 }, table: { felt: 'tile', slotScale: 1.2 } });
+  });
+});
+
+describe('per-variant settings', () => {
+  const all = skins({
+    classic: { manifest: { colors: { a: 'classic', b: 'classic' }, variants: { klondike: { colors: { a: 'classic-k', c: 'classic-k' } } } } },
+    mine: { manifest: { colors: { a: 'mine' }, variants: { klondike: { colors: { b: 'mine-k' } } } } },
+  });
+  const chain = chainFor(all.skins, 'mine');
+
+  it('leaves the blocks out without a variant, and for a variant without one', () => {
+    expect(settingsFor(chain).colors).toEqual({ a: 'mine', b: 'classic' });
+    expect(settingsFor(chain, 'bbb').colors).toEqual({ a: 'mine', b: 'classic' });
+  });
+
+  it("applies each skin's block right after the skin, so a child still beats its parent's block", () => {
+    expect(settingsFor(chain, 'klondike').colors).toEqual({ a: 'mine', b: 'mine-k', c: 'classic-k' });
+  });
+
+  it('only takes colours in a block, for now', () => {
+    expect(skins({ classic: { manifest: { variants: { klondike: { pips: { size: 0.2 } } } } } }).problems[0]).toMatch(
+      /variants\.klondike\.pips: unknown setting/,
+    );
   });
 });
 

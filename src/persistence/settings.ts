@@ -8,6 +8,8 @@ export const isMotion = (v: unknown): v is Motion => MOTIONS.includes(v as Motio
 
 /** Preferences, kept apart from the game save so neither needs the other's schema. */
 export interface Settings {
+  /** The variant last played, picked in the selector or with `?variant=`. */
+  variant?: string;
   skin?: string;
   motion?: Motion;
   /** Skin sounds; on unless turned off. */
@@ -18,6 +20,7 @@ export function loadSettings(): Settings {
   try {
     const data = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Settings | null;
     const settings: Settings = {};
+    if (typeof data?.variant === 'string') settings.variant = data.variant;
     if (typeof data?.skin === 'string') settings.skin = data.skin;
     if (isMotion(data?.motion)) settings.motion = data.motion;
     if (typeof data?.sound === 'boolean') settings.sound = data.sound;

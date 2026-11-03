@@ -36,7 +36,12 @@ export interface SkinManifest {
   /** `tileSize`: width of one felt tile, in card widths. `slotScale`: size of the empty-pile images relative to the pile. */
   table?: { felt?: 'cover' | 'tile'; tileSize?: number; slotScale?: number };
   ui?: { button?: { slice?: number }; panel?: { slice?: number } };
+  /** Overrides per variant id, applied right after this skin's own settings (docs/plans/07-variant-skins). */
+  variants?: Record<string, VariantManifest>;
 }
+
+/** What a skin can change for one variant. Same shape as the top level; colours only, so far. */
+export type VariantManifest = Pick<SkinManifest, 'colors'>;
 
 /** `skins/skins.json`: which skins are playable, in which order, and the default. */
 export interface SkinRegistry {
@@ -68,10 +73,17 @@ export const DEFAULT_SETTINGS: SkinSettings = {
   ui: { button: { slice: 12 }, panel: { slice: 24 } },
 };
 
-/** Merge manifests from the root of the chain to the skin itself. Layouts merge per rank. */
-export function mergeSettings(rootFirst: readonly SkinManifest[]): SkinSettings {
+/**
+ * Merge manifests from the root of the chain to the skin itself. Layouts merge per rank. With `variantId`, each skin's
+ * block for that variant goes right after the skin's own settings, so a child skin still wins over its parent's block.
+ */
+export function mergeSettings(rootFirst: readonly SkinManifest[], variantId?: string): SkinSettings {
   const s = structuredClone(DEFAULT_SETTINGS);
-  for (const m of rootFirst) {
+  const layers = rootFirst.flatMap((m) => {
+    const v = variantId === undefined ? undefined : m.variants?.[variantId];
+    return v ? [m, v] : [m];
+  });
+  for (const m of layers as SkinManifest[]) {
     Object.assign(s.colors, m.colors);
     s.scaling = m.scaling ?? s.scaling;
     Object.assign(s.card, m.card);
@@ -159,6 +171,7 @@ const manifest = shape<SkinManifest>({
   }),
   table: shape({ felt: oneOf('cover', 'tile'), tileSize: num, slotScale: num }),
   ui: shape({ button: shape({ slice: num }), panel: shape({ slice: num }) }),
+  variants: record(shape<VariantManifest>({ colors: record(str) })),
 });
 
 export function parseManifest(raw: unknown, file: string): SkinManifest {

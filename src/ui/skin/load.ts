@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, type Box, type SkinSettings } from './manifest';
 import { skinFaces, skinUi, type LoadedImage, type SkinUi } from './faces';
 import {
   chainFor,
+  resolveBack,
   resolveChrome,
   resolveFace,
   resolveSounds,
@@ -25,6 +26,8 @@ export interface LoadedSkin {
   ui: SkinUi;
   /** URLs of each sound's variants. Not preloaded: the game starts without them. */
   sounds: Partial<Record<SoundName, string[]>>;
+  /** Switch to a variant's colours (the skin's `variants` blocks). Restyles the whole page, so only while nothing moves. */
+  useVariant(variantId: string): void;
 }
 
 async function loadImage(url: string): Promise<LoadedImage> {
@@ -41,9 +44,9 @@ function setBox(style: CSSStyleDeclaration, prefix: string, b: Box): void {
   style.setProperty(`--${prefix}-h`, `${b.h * 100}%`);
 }
 
+/** Everything but the colours, which differ per variant (see `useVariant`). */
 function apply(board: HTMLElement, id: string | null, settings: SkinSettings, chrome: Record<string, LoadedImage | undefined>): void {
   const root = document.documentElement.style;
-  for (const [name, value] of Object.entries(settings.colors)) root.setProperty(`--${name}`, value);
   setBox(root, 'center', settings.center.box);
   setBox(root, 'center-n', settings.center.narrowBox);
   root.setProperty('--pip-size', String(settings.pips.size));
@@ -74,17 +77,16 @@ function apply(board: HTMLElement, id: string | null, settings: SkinSettings, ch
 }
 
 /**
- * Pick the skin (requested → default → classic), resolve every face and preload what it uses,
- * so nothing pops in during the first deal. Anything that fails falls back to text faces.
- * `onProgress` hears about every image that's in (or failed).
+ * Pick the skin (requested → default → classic), resolve every face of every variant's deck, the backs and each
+ * variant's emblem, and preload what they use, so nothing pops in during a deal or in the variant selector. Anything
+ * that fails falls back to text faces. `onProgress` hears about every image that's in (or failed).
  */
 export async function loadSkin(
-  variant: Pick<Variant, 'id' | 'deck'>,
+  variants: readonly Pick<Variant, 'id' | 'deck'>[],
   board: HTMLElement,
   requested: string | undefined,
   onProgress?: (done: number, total: number) => void,
 ): Promise<LoadedSkin> {
-  const { deck } = variant;
   const cat = catalog();
   if (import.meta.env.DEV) {
     for (const p of cat.problems) console.warn(`[skins] ${p}`);
@@ -92,10 +94,20 @@ export async function loadSkin(
     const theme = getComputedStyle(document.documentElement);
     for (const id of cat.registry.skins) {
       const skin = cat.skins.get(id);
-      const unknown = skin ? unknownFiles(skin, deck) : [];
+      // A file is unknown when no deck uses it.
+      const unknown = skin
+        ? variants.map((v) => unknownFiles(skin, v.deck)).reduce((a, b) => a.filter((f) => b.includes(f)))
+        : [];
       if (unknown.length) console.warn(`[skins] ${id}: files no card uses (typo?):\n  ${unknown.join('\n  ')}`);
-      const colors = Object.keys(skin?.manifest.colors ?? {}).filter((name) => !theme.getPropertyValue(`--${name}`));
+      const blocks = Object.entries(skin?.manifest.variants ?? {});
+      const named = [
+        ...Object.keys(skin?.manifest.colors ?? {}),
+        ...blocks.flatMap(([v, block]) => Object.keys(block.colors ?? {}).map((name) => `${name} (variants.${v})`)),
+      ];
+      const colors = named.filter((name) => !theme.getPropertyValue(`--${name.split(' ')[0]}`));
       if (colors.length) console.warn(`[skins] ${id}: colours that don't exist (see skins/README.md):\n  ${colors.join('\n  ')}`);
+      const games = blocks.map(([v]) => v).filter((v) => !variants.some((known) => known.id === v));
+      if (games.length) console.warn(`[skins] ${id}: variants for games this build doesn't have: ${games.join(', ')}`);
     }
   }
 
@@ -118,12 +130,16 @@ export async function loadSkin(
 
   const settings = chain.length ? settingsFor(chain) : DEFAULT_SETTINGS;
   const specs = new Map<string, FaceSpec>();
-  for (const card of buildCards(deck)) specs.set(card.id, resolveFace(chain, settings, deck, card));
+  // Decks share card ids (Klondike's is the Emperor deck without the Emperor), so each card is resolved once.
+  for (const { deck } of variants) {
+    for (const card of buildCards(deck)) if (!specs.has(card.id)) specs.set(card.id, resolveFace(chain, settings, deck, card));
+  }
   const chromePaths = resolveChrome(chain);
-  const ui = resolveUi(chain, variant.id);
+  const ui = resolveUi(chain, variants.map((v) => v.id));
+  const back = resolveBack(chain);
 
   const paths = new Set<string>(Object.values(chromePaths).filter((p) => p !== undefined));
-  const assets = Object.values(ui);
+  const assets = [...Object.values(ui).filter((a) => a !== undefined), back.art, back.outline];
   for (const spec of specs.values()) {
     assets.push(spec.rank, spec.suit, spec.background, spec.outline, spec.center.kind === 'art' ? spec.center.art : spec.center.pip);
   }
@@ -145,5 +161,18 @@ export async function loadSkin(
   const chrome = Object.fromEntries(Object.entries(chromePaths).map(([k, p]) => [k, p ? images.get(p) : undefined]));
   apply(board, id, settings, chrome);
   const sounds = Object.fromEntries(Object.entries(resolveSounds(chain)).map(([name, list]) => [name, list.map((p) => cat.urls[p]!)]));
-  return { id, faces: skinFaces(specs, images), ui: skinUi(ui, images), sounds };
+
+  const colorsFor = new Map(variants.map((v) => [v.id, chain.length ? settingsFor(chain, v.id).colors : settings.colors]));
+  const root = document.documentElement.style;
+  let applied: string[] = [];
+  const useVariant = (variantId: string) => {
+    const colors = colorsFor.get(variantId) ?? settings.colors;
+    // A name only the previous variant set goes back to theme.css.
+    for (const name of applied) if (!(name in colors)) root.removeProperty(`--${name}`);
+    for (const [name, value] of Object.entries(colors)) root.setProperty(`--${name}`, value);
+    applied = Object.keys(colors);
+  };
+  if (variants[0]) useVariant(variants[0].id);
+
+  return { id, faces: skinFaces(specs, back, images), ui: skinUi(ui, images), sounds, useVariant };
 }
