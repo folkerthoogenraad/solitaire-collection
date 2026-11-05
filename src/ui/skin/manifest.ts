@@ -27,6 +27,11 @@ export interface SkinManifest {
    */
   card?: { scale?: number; dropScale?: number };
   center?: { box?: Box; narrowBox?: Box };
+  /**
+   * Corner index, all in card widths: `x`, `y` from the card's top-left (the bottom-right copy mirrors it), `rank` and
+   * `suit` the heights of the two images. `compact`: the sizes on one line, for column cards on phones.
+   */
+  index?: IndexManifest;
   pips?: {
     size?: number;
     flip?: 'auto' | 'none';
@@ -38,6 +43,17 @@ export interface SkinManifest {
   ui?: { button?: { slice?: number }; panel?: { slice?: number } };
   /** Overrides per variant id, applied right after this skin's own settings (docs/plans/07-variant-skins). */
   variants?: Record<string, VariantManifest>;
+}
+
+export interface IndexSizes {
+  rank: number;
+  suit: number;
+}
+
+export interface IndexManifest extends Partial<IndexSizes> {
+  x?: number;
+  y?: number;
+  compact?: Partial<IndexSizes>;
 }
 
 /** What a skin can change for one variant. Same shape as the top level; colours only, so far. */
@@ -55,6 +71,7 @@ export interface SkinSettings {
   scaling: 'smooth' | 'pixelated';
   card: { scale: number; dropScale?: number };
   center: { box: Box; narrowBox: Box };
+  index: IndexSizes & { x: number; y: number; compact: IndexSizes };
   pips: { size: number; flip: 'auto' | 'none'; narrow: 'single' | 'layout'; layouts: Record<string, PipPoint[]> };
   table: { felt: 'cover' | 'tile'; tileSize?: number; slotScale: number };
   ui: { button: { slice: number }; panel: { slice: number } };
@@ -68,6 +85,7 @@ export const DEFAULT_SETTINGS: SkinSettings = {
     box: { x: 0.22, y: 0.12, w: 0.56, h: 0.76 },
     narrowBox: { x: 0.08, y: 0.28, w: 0.84, h: 0.64 },
   },
+  index: { x: 0.07, y: 0.05, rank: 0.21, suit: 0.165, compact: { rank: 0.24, suit: 0.19 } },
   pips: { size: 0.2, flip: 'auto', narrow: 'single', layouts: {} },
   table: { felt: 'cover', slotScale: 1 },
   ui: { button: { slice: 12 }, panel: { slice: 24 } },
@@ -88,6 +106,9 @@ export function mergeSettings(rootFirst: readonly SkinManifest[], variantId?: st
     s.scaling = m.scaling ?? s.scaling;
     Object.assign(s.card, m.card);
     Object.assign(s.center, m.center);
+    const { compact, ...index } = m.index ?? {};
+    Object.assign(s.index, index);
+    Object.assign(s.index.compact, compact);
     const { layouts, ...pips } = m.pips ?? {};
     Object.assign(s.pips, pips);
     Object.assign(s.pips.layouts, layouts);
@@ -163,6 +184,7 @@ const manifest = shape<SkinManifest>({
   scaling: oneOf('smooth', 'pixelated'),
   card: shape({ scale: num, dropScale: num }),
   center: shape({ box, narrowBox: box }),
+  index: shape<IndexManifest>({ x: num, y: num, rank: num, suit: num, compact: shape({ rank: num, suit: num }) }),
   pips: shape({
     size: num,
     flip: oneOf('auto', 'none'),

@@ -192,6 +192,13 @@ Everything is optional. Anything you leave out comes from the skin you extend. H
     "narrowBox": { "x": 0.08, "y": 0.28, "w": 0.84, "h": 0.64 }   // on phones
   },
 
+  // The corner index, in card widths. x, y: from the top-left corner (the bottom-right copy mirrors it).
+  // rank, suit: the height of each image. compact: the sizes on phones, where column cards show rank and suit on one line
+  "index": {
+    "x": 0.07, "y": 0.05, "rank": 0.21, "suit": 0.165,
+    "compact": { "rank": 0.24, "suit": 0.19 }
+  },
+
   "pips": {
     "size": 0.17,         // pip height, as a fraction of card width
     "flip": "auto",       // pips in the bottom half are upside down; "none" to turn that off

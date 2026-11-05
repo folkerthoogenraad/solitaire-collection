@@ -49,6 +49,13 @@ function apply(board: HTMLElement, id: string | null, settings: SkinSettings, ch
   const root = document.documentElement.style;
   setBox(root, 'center', settings.center.box);
   setBox(root, 'center-n', settings.center.narrowBox);
+  const idx = settings.index;
+  root.setProperty('--idx-x', String(idx.x));
+  root.setProperty('--idx-y', String(idx.y));
+  root.setProperty('--idx-rank', String(idx.rank));
+  root.setProperty('--idx-suit', String(idx.suit));
+  root.setProperty('--idx-compact-rank', String(idx.compact.rank));
+  root.setProperty('--idx-compact-suit', String(idx.compact.suit));
   root.setProperty('--pip-size', String(settings.pips.size));
   root.setProperty('--card-scale', String(settings.card.scale));
   root.setProperty('--drop-scale', String(settings.card.dropScale ?? settings.card.scale));

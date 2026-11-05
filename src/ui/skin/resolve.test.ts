@@ -172,6 +172,21 @@ describe('index, background and chrome', () => {
     expect(settingsFor(chainFor(scaled.skins, 'classic'))).toMatchObject({ card: { scale: 1 }, table: { slotScale: 1 } });
     expect(settingsFor(chainFor(scaled.skins, 'b'))).toMatchObject({ card: { scale: 1.1 }, table: { felt: 'tile', slotScale: 1.2 } });
   });
+
+  it('merges the index per field, compact sizes included', () => {
+    const all = skins({
+      classic: {},
+      a: { manifest: { index: { x: 0.1, compact: { rank: 0.3 } } } },
+      b: { manifest: { extends: 'a', index: { rank: 0.25, compact: { suit: 0.2 } } } },
+    });
+    expect(settingsFor(chainFor(all.skins, 'classic')).index).toEqual({
+      x: 0.07, y: 0.05, rank: 0.21, suit: 0.165, compact: { rank: 0.24, suit: 0.19 },
+    });
+    expect(settingsFor(chainFor(all.skins, 'b')).index).toEqual({
+      x: 0.1, y: 0.05, rank: 0.25, suit: 0.165, compact: { rank: 0.3, suit: 0.2 },
+    });
+    expect(skins({ classic: { manifest: { index: { size: 0.2 } } } }).problems[0]).toMatch(/index\.size: unknown setting/);
+  });
 });
 
 describe('per-variant settings', () => {

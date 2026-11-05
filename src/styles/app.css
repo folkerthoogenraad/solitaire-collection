@@ -189,22 +189,22 @@ html.zoomed, html.zoomed body, html.zoomed .board { touch-action: manipulation; 
 
 .idx {
   position: absolute;
-  top: calc(var(--cw) * 0.05);
-  left: calc(var(--cw) * 0.07);
+  top: calc(var(--cw) * var(--idx-y));
+  left: calc(var(--cw) * var(--idx-x));
   display: flex;
   flex-direction: column;
   align-items: center;
   font-weight: 700;
 }
-.idx .r { --h: calc(var(--cw) * 0.21); }
+.idx .r { --h: calc(var(--cw) * var(--idx-rank)); }
 .idx .r.text { letter-spacing: -0.05em; }
-.idx .s { --h: calc(var(--cw) * 0.165); }
-.idx.br { top: auto; left: auto; bottom: calc(var(--cw) * 0.05); right: calc(var(--cw) * 0.07); transform: rotate(180deg); }
+.idx .s { --h: calc(var(--cw) * var(--idx-suit)); }
+.idx.br { top: auto; left: auto; bottom: calc(var(--cw) * var(--idx-y)); right: calc(var(--cw) * var(--idx-x)); transform: rotate(180deg); }
 
 /* One-line index for column cards in narrow mode (phones) */
 .card.compact .idx:not(.br) { flex-direction: row; gap: calc(var(--cw) * 0.02); }
-.card.compact .idx .r { --h: calc(var(--cw) * 0.24); }
-.card.compact .idx .s { --h: calc(var(--cw) * 0.19); }
+.card.compact .idx .r { --h: calc(var(--cw) * var(--idx-compact-rank)); }
+.card.compact .idx .s { --h: calc(var(--cw) * var(--idx-compact-suit)); }
 
 /* Centre art or pips, inside the skin's centre box */
 .center {
