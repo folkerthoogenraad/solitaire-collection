@@ -6,3 +6,4 @@ trace-*.json
 # Editor backups (Krita and others)
 *~
 *-autosave.kra
+tools/solver/solver
